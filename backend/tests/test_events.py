@@ -133,3 +133,81 @@ def test_5xx_then_success_returns_events(monkeypatch):
     result = events.fetch_recent()
     assert len(result) == 1
     assert len(calls) == 2
+
+
+def test_fetch_recent_with_wrong_shape_raises_upstream_error(monkeypatch):
+    """Missing 'features' key in response"""
+    monkeypatch.setattr(
+        events.httpx, "get",
+        lambda url, params, timeout: _response(200, json={"error": "x"})
+    )
+    with pytest.raises(UpstreamError, match="unexpected"):
+        events.fetch_recent()
+
+
+def test_fetch_recent_missing_geometry_raises_upstream_error(monkeypatch):
+    """Feature without geometry"""
+    bad_feed = {
+        "type": "FeatureCollection",
+        "features": [{"type": "Feature", "id": "bad", "properties": {"mag": 5.0}}]
+    }
+    monkeypatch.setattr(
+        events.httpx, "get",
+        lambda url, params, timeout: _response(200, json=bad_feed)
+    )
+    with pytest.raises(UpstreamError, match="unexpected"):
+        events.fetch_recent()
+
+
+def test_fetch_event_non_dict_body_raises_upstream_error(monkeypatch):
+    """Body is a list instead of dict"""
+    monkeypatch.setattr(
+        events.httpx, "get",
+        lambda url, params, timeout: _response(200, json=[])
+    )
+    with pytest.raises(UpstreamError, match="unexpected"):
+        events.fetch_event("bad")
+
+
+def test_fetch_event_null_properties_raises_upstream_error(monkeypatch):
+    """Properties field is null"""
+    monkeypatch.setattr(
+        events.httpx, "get",
+        lambda url, params, timeout: _response(
+            200,
+            json={
+                "type": "Feature",
+                "properties": None,
+                "geometry": {"type": "Point", "coordinates": [1, 2, 3]}
+            }
+        )
+    )
+    with pytest.raises(UpstreamError, match="unexpected"):
+        events.fetch_event("bad")
+
+
+def test_fetch_event_400_not_retried(monkeypatch):
+    """400 error immediately raises NotFoundError, no retry"""
+    calls = []
+
+    def bad(url, params, timeout):
+        calls.append(1)
+        return _response(400)
+
+    monkeypatch.setattr(events.httpx, "get", bad)
+    with pytest.raises(NotFoundError):
+        events.fetch_event("nope")
+    assert len(calls) == 1
+
+
+def test_http_timeout_passed_to_httpx(monkeypatch):
+    """Verify HTTP_TIMEOUT is passed to httpx.get"""
+    seen_timeout = []
+
+    def capture(url, params, timeout):
+        seen_timeout.append(timeout)
+        return _response(200, json=FEED)
+
+    monkeypatch.setattr(events.httpx, "get", capture)
+    events.fetch_recent()
+    assert seen_timeout[0] == events.HTTP_TIMEOUT

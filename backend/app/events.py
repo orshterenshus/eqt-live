@@ -37,6 +37,16 @@ def parse_feed(data: dict) -> list[Event]:
     return [parse_feature(f) for f in data["features"] if f["properties"].get("mag") is not None]
 
 
+def _parse(fn, data):
+    """Parse data with fn, catching malformed payloads. Lets NotFoundError pass."""
+    try:
+        return fn(data)
+    except NotFoundError:
+        raise
+    except (KeyError, TypeError, ValueError, AttributeError) as e:
+        raise UpstreamError("USGS returned an unexpected response") from e
+
+
 def _get(params: dict, not_found_ok: bool = False) -> dict:
     last_error: Exception | None = None
     for _ in range(2):  # one retry
@@ -62,15 +72,15 @@ def fetch_recent(days: int = 3, min_mag: float = 4.0, limit: int = 100) -> list[
         "orderby": "time",
         "limit": limit,
     })
-    return parse_feed(data)
+    return _parse(parse_feed, data)
 
 
 def fetch_event(event_id: str) -> Event:
     data = _get({"format": "geojson", "eventid": event_id}, not_found_ok=True)
-    # Check for null magnitude
-    if data.get("properties", {}).get("mag") is None:
-        raise NotFoundError("Earthquake has no magnitude yet")
-    try:
-        return parse_feature(data)
-    except (KeyError, TypeError, ValueError) as e:
-        raise UpstreamError("USGS returned an unexpected response") from e
+
+    def parse_event_data(d):
+        if isinstance(d, dict) and d.get("properties", {}).get("mag") is None:
+            raise NotFoundError("Earthquake has no magnitude yet")
+        return parse_feature(d)
+
+    return _parse(parse_event_data, data)
