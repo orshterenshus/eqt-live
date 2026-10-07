@@ -2,6 +2,8 @@ import type { AnalysisResult } from "../api/client";
 import { secondsBetween } from "../format";
 import { Plot } from "./Plot";
 
+const HEIGHT = 360;
+
 const PICK_SOURCES = [
   { key: "teacher", color: "#2563eb", dash: "solid" },
   { key: "student", color: "#dc2626", dash: "solid" },
@@ -40,14 +42,14 @@ export function WaveformChart({ result }: { result: AnalysisResult }) {
         line: { width: 1, color: "#0f172a" }, showlegend: false,
       }))}
       layout={{
-        height: 360, margin: { l: 40, r: 10, t: 24, b: 40 },
+        height: HEIGHT, margin: { l: 40, r: 10, t: 24, b: 40 },
         grid: { rows: 3, columns: 1, pattern: "coupled" },
         xaxis: { title: { text: "seconds" } },
         yaxis: { title: { text: "Z" } }, yaxis2: { title: { text: "N" } }, yaxis3: { title: { text: "E" } },
         shapes, annotations,
       }}
       config={{ displaylogo: false, responsive: true }}
-      style={{ width: "100%" }}
+      style={{ width: "100%", height: HEIGHT }}
     />
   );
 }

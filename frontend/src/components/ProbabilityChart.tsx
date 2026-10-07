@@ -1,6 +1,8 @@
 import type { AnalysisResult } from "../api/client";
 import { Plot } from "./Plot";
 
+const HEIGHT = 260;
+
 const CURVES = [
   ["detection", "Detection", "#16a34a"],
   ["p", "P", "#2563eb"],
@@ -21,13 +23,13 @@ export function ProbabilityChart({ result }: { result: AnalysisResult }) {
     <Plot
       data={data}
       layout={{
-        height: 260, margin: { l: 40, r: 10, t: 10, b: 40 },
+        height: HEIGHT, margin: { l: 40, r: 10, t: 10, b: 40 },
         yaxis: { range: [0, 1.05], title: { text: "probability" } },
         xaxis: { title: { text: "seconds" } },
         legend: { orientation: "h" },
       }}
       config={{ displaylogo: false, responsive: true }}
-      style={{ width: "100%" }}
+      style={{ width: "100%", height: HEIGHT }}
     />
   );
 }
