@@ -14,10 +14,11 @@ interface Props {
 
 export function AnalysisView({ query, models }: Props) {
   if (query.isPending) return <Spinner text="Downloading waveform and running both models…" />;
-  if (query.isError) return <ErrorBox error={query.error} />;
-  const result = query.data;
+  if (query.isError && !query.data) return <ErrorBox error={query.error} />;
+  const result = query.data!;
   return (
     <div>
+      {query.isError && <ErrorBox error={query.error} />}
       <p className="muted">
         Station {result.station}
         {result.distance_km != null && ` · ${result.distance_km.toFixed(0)} km from the epicenter`}
@@ -25,7 +26,7 @@ export function AnalysisView({ query, models }: Props) {
       </p>
       <div className="legend">
         <span className="teacher">━ Teacher</span>
-        <span className="student">━ Student</span>
+        <span className="student">╍ Student</span>
         <span className="theoretical">┅ Theoretical (iasp91)</span>
       </div>
       <WaveformChart result={result} />

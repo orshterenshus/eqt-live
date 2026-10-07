@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api, type ModelsInfo } from "../api/client";
 import { AnalysisView } from "../components/AnalysisView";
 import { ErrorBox } from "../components/ErrorBox";
@@ -19,15 +19,15 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
     queryFn: () => api.stations(eventId!),
     enabled: eventId !== null,
   });
+  const stations = stationsQ.data;
+  const effectiveStation = stations?.some((s) => s.id === stationId)
+    ? stationId
+    : stations?.[0]?.id ?? null;
   const analysisQ = useQuery({
-    queryKey: ["analyze", eventId, stationId],
-    queryFn: () => api.analyze(eventId!, stationId!),
-    enabled: eventId !== null && stationId !== null,
+    queryKey: ["analyze", eventId, effectiveStation],
+    queryFn: () => api.analyze(eventId!, effectiveStation!),
+    enabled: eventId !== null && effectiveStation !== null,
   });
-
-  useEffect(() => {
-    setStationId(stationsQ.data?.[0]?.id ?? null);
-  }, [stationsQ.data]);
 
   const events = eventsQ.data ?? [];
   const selected = events.find((e) => e.id === eventId);
@@ -80,11 +80,11 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
                     id: s.id,
                     label: `${s.network}.${s.station} – ${s.distance_km.toFixed(0)} km`,
                   }))}
-                  value={stationId}
+                  value={effectiveStation}
                   onChange={setStationId}
                 />
               </label>
-              {stationId && <AnalysisView query={analysisQ} models={models} />}
+              {effectiveStation && <AnalysisView query={analysisQ} models={models} />}
             </>
           )}
         </section>

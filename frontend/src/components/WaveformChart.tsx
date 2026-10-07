@@ -6,7 +6,7 @@ const HEIGHT = 360;
 
 const PICK_SOURCES = [
   { key: "teacher", color: "#2563eb", dash: "solid" },
-  { key: "student", color: "#dc2626", dash: "solid" },
+  { key: "student", color: "#dc2626", dash: "dash" },
   { key: "theoretical", color: "#6b7280", dash: "dot" },
 ] as const;
 
