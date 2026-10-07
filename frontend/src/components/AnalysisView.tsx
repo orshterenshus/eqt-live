@@ -25,6 +25,7 @@ export function AnalysisView({ query, models }: Props) {
         {` · window starts ${formatUtcTime(result.start_time)} UTC`}
       </p>
       <div className="legend">
+        <span>Pick lines:</span>
         <span className="teacher">━ Teacher</span>
         <span className="student">╍ Student</span>
         <span className="theoretical">┅ Theoretical (iasp91)</span>

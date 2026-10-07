@@ -10,10 +10,13 @@ import { StationPicker } from "../components/StationPicker";
 
 export function RecentTab({ models }: { models?: ModelsInfo }) {
   const [minMag, setMinMag] = useState(4);
-  const [eventId, setEventId] = useState<string | null>(null);
+  const [rawEventId, setEventId] = useState<string | null>(null);
   const [stationId, setStationId] = useState<string | null>(null);
 
   const eventsQ = useQuery({ queryKey: ["events", minMag], queryFn: () => api.events(3, minMag) });
+  const events = eventsQ.data ?? [];
+  // A selection that is no longer in the (filtered) list counts as unselected.
+  const eventId = events.some((e) => e.id === rawEventId) ? rawEventId : null;
   const stationsQ = useQuery({
     queryKey: ["stations", eventId],
     queryFn: () => api.stations(eventId!),
@@ -29,7 +32,6 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
     enabled: eventId !== null && effectiveStation !== null,
   });
 
-  const events = eventsQ.data ?? [];
   const selected = events.find((e) => e.id === eventId);
 
   return (

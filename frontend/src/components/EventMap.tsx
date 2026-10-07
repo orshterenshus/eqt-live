@@ -12,7 +12,7 @@ export function EventMap({ events, selectedId, onSelect }: Props) {
     <MapContainer center={[20, 0]} zoom={2} className="map" worldCopyJump>
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {events.map((e) => (
         <CircleMarker

@@ -27,7 +27,9 @@ export function LiveTab({ models }: { models?: ModelsInfo }) {
       <p className="banner">
         This view analyzes the latest ~2 minutes from a live station and refreshes every minute.
         Most of the time there is no earthquake, so "no" is the normal result. To see detections,
-        use the Recent Earthquakes tab.
+        use the Recent Earthquakes tab. The original EQTransformer is known to be over-sensitive on
+        raw live noise and often flags quiet stations, while the distilled student is more
+        conservative, so compare the two.
       </p>
       {stationsQ.isPending ? (
         <Spinner text="Loading stations…" />

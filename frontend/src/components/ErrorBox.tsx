@@ -15,7 +15,9 @@ export function describeError(err: unknown): string {
         return err.message;
     }
   }
-  return "Network error: could not reach the server.";
+  if (err instanceof TypeError) return "Network error: could not reach the server.";
+  if (err instanceof Error && err.message) return err.message;
+  return "Something went wrong.";
 }
 
 export function ErrorBox({ error }: { error: unknown }) {

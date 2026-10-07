@@ -12,4 +12,10 @@ describe("ErrorBox", () => {
   it("handles network failures", () => {
     expect(describeError(new TypeError("Failed to fetch"))).toMatch(/could not reach the server/);
   });
+
+  it("does not call other errors network errors", () => {
+    expect(describeError(new Error("boom"))).toBe("boom");
+    expect(describeError(new Error(""))).toBe("Something went wrong.");
+    expect(describeError("weird")).toBe("Something went wrong.");
+  });
 });

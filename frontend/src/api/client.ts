@@ -78,7 +78,7 @@ async function get<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (!res.ok) {
     let code = "unknown";
-    let message = res.statusText;
+    let message = res.statusText || `Request failed (HTTP ${res.status})`;
     try {
       const body = await res.json();
       code = body.error ?? code;
