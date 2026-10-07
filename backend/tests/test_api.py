@@ -88,7 +88,37 @@ def test_events(client):
 
 
 def test_events_validates_params(client):
-    assert client.get("/api/events", params={"days": 30}).status_code == 422
+    r = client.get("/api/events", params={"days": 30})
+    assert r.status_code == 422
+    body = r.json()
+    assert body["error"] == "invalid_request"
+    assert isinstance(body["message"], str) and body["message"]
+
+
+def test_missing_param_uses_error_shape(client):
+    r = client.get("/api/analyze", params={"event_id": "us1"})
+    assert r.status_code == 422
+    body = r.json()
+    assert body["error"] == "invalid_request"
+    assert "station" in body["message"]
+
+
+def test_unexpected_error_is_500_json(waveform_calls, monkeypatch):
+    def boom(days, min_mag):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(events, "fetch_recent", boom)
+    app = create_app(runner=FakeRunner(), load_models=False)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        r = c.get("/api/events")
+    assert r.status_code == 500
+    assert r.json() == {"error": "internal_error", "message": "Internal server error"}
+
+
+def test_too_short_stream_is_422(client, monkeypatch):
+    monkeypatch.setattr(stations, "fetch_waveform", lambda *a: fake_stream(a[4], a[4] + 0.1))
+    r = client.get("/api/analyze", params={"event_id": "us1", "station": STATION})
+    assert r.status_code == 422 and r.json()["error"] == "insufficient_data"
 
 
 def test_stations(client):

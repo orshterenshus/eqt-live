@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 
 from fastapi import FastAPI, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -40,6 +41,20 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
     async def app_error_handler(request: Request, exc: AppError):
         return JSONResponse(status_code=exc.status_code,
                             content={"error": exc.code, "message": exc.message})
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(request: Request, exc: RequestValidationError):
+        parts = [f"{'.'.join(str(x) for x in e['loc'][1:]) or e['loc'][0]}: {e['msg']}"
+                 for e in exc.errors()]
+        return JSONResponse(status_code=422,
+                            content={"error": "invalid_request", "message": "; ".join(parts)})
+
+    @app.exception_handler(Exception)
+    async def unexpected_error_handler(request: Request, exc: Exception):
+        log.exception("Unhandled error on %s", request.url.path)
+        return JSONResponse(status_code=500,
+                            content={"error": "internal_error",
+                                     "message": "Internal server error"})
 
     @app.get("/health", response_model=HealthOut)
     def health():
