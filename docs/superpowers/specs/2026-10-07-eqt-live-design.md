@@ -71,8 +71,12 @@ Browser ──► FastAPI
   the original EQTransformer expects `ENZ`. Task 1 of the plan establishes which order each model
   actually received in training (using a STEAD sample with known picks) and fixes it as a
   constant per model, covered by a test.
-- **Models in git.** Student is 0.4 MB and Teacher is 5.1 MB, both below Hugging Face's 10 MB
-  non-LFS limit.
+- **Models in git via Git LFS.** Student is 0.4 MB and Teacher is 5.1 MB. Hugging Face rejects
+  binary files that are not tracked by LFS, so `*.h5`, `*.npz` and images are LFS-tracked from
+  the first commit.
+- **Stations within 3° (~330 km).** Both models were trained on STEAD, which consists of local
+  events, so only nearby stations are offered. Events without nearby 3-component stations show
+  "no nearby stations".
 
 ## 3. API
 
@@ -84,6 +88,7 @@ All responses are Pydantic models; OpenAPI docs at `/docs`.
 | `GET /api/events/{event_id}/stations` | Up to 10 stations: `network, station, lat, lon, distance_km` |
 | `GET /api/analyze?event_id=…&station=NET.STA` | Analysis result (below), window ≈ P_theoretical − 30 s to + 90 s |
 | `GET /api/live?station=NET.STA` | Analysis result for the station's most recent ~2 minutes (no theoretical arrivals). The station must be in a curated list of ~8 reliable global stations |
+| `GET /api/live/stations` | The curated live station list: `id, label` |
 | `GET /api/models` | Static model facts: params, file size, compression ratio |
 | `GET /health` | `{status, models_loaded}` |
 
