@@ -59,3 +59,77 @@ def test_timeout_becomes_upstream_error_after_one_retry(monkeypatch):
     with pytest.raises(UpstreamError):
         events.fetch_recent()
     assert len(calls) == 2
+
+
+def test_invalid_json_retried_and_becomes_upstream_error(monkeypatch):
+    calls = []
+
+    def bad_json(url, params, timeout):
+        calls.append(1)
+        # Return 200 but with non-JSON content
+        return httpx.Response(200, content=b"<html>", request=httpx.Request("GET", events.USGS_URL))
+
+    monkeypatch.setattr(events.httpx, "get", bad_json)
+    with pytest.raises(UpstreamError):
+        events.fetch_recent()
+    assert len(calls) == 2
+
+
+def test_fetch_recent_with_400_becomes_upstream_error(monkeypatch):
+    calls = []
+
+    def bad_request(url, params, timeout):
+        calls.append(1)
+        return _response(400)
+
+    monkeypatch.setattr(events.httpx, "get", bad_request)
+    with pytest.raises(UpstreamError):
+        events.fetch_recent()
+    assert len(calls) == 2
+
+
+def test_fetch_event_with_404_raises_not_found_once(monkeypatch):
+    calls = []
+
+    def not_found(url, params, timeout):
+        calls.append(1)
+        return _response(404)
+
+    monkeypatch.setattr(events.httpx, "get", not_found)
+    with pytest.raises(NotFoundError):
+        events.fetch_event("nope")
+    assert len(calls) == 1  # Should NOT retry
+
+
+def test_fetch_event_null_magnitude_raises_not_found(monkeypatch):
+    monkeypatch.setattr(events.httpx, "get", lambda url, params, timeout: _response(200, json=NO_MAG))
+    with pytest.raises(NotFoundError, match="no magnitude"):
+        events.fetch_event("nomag")
+
+
+def test_fetch_event_malformed_payload_raises_upstream_error(monkeypatch):
+    calls = []
+
+    def bad_payload(url, params, timeout):
+        calls.append(1)
+        # Return valid JSON with mag but missing geometry coordinates
+        return httpx.Response(200, json={"type": "Feature", "id": "test", "properties": {"mag": 5.0}, "geometry": {"type": "Point", "coordinates": []}}, request=httpx.Request("GET", events.USGS_URL))
+
+    monkeypatch.setattr(events.httpx, "get", bad_payload)
+    with pytest.raises(UpstreamError, match="unexpected"):
+        events.fetch_event("bad")
+
+
+def test_5xx_then_success_returns_events(monkeypatch):
+    calls = []
+
+    def flaky(url, params, timeout):
+        calls.append(1)
+        if len(calls) == 1:
+            return _response(503)
+        return _response(200, json=FEED)
+
+    monkeypatch.setattr(events.httpx, "get", flaky)
+    result = events.fetch_recent()
+    assert len(result) == 1
+    assert len(calls) == 2

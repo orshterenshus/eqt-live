@@ -37,7 +37,7 @@ def parse_feed(data: dict) -> list[Event]:
     return [parse_feature(f) for f in data["features"] if f["properties"].get("mag") is not None]
 
 
-def _get(params: dict) -> dict:
+def _get(params: dict, not_found_ok: bool = False) -> dict:
     last_error: Exception | None = None
     for _ in range(2):  # one retry
         try:
@@ -45,10 +45,10 @@ def _get(params: dict) -> dict:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code in (400, 404):
+            if e.response.status_code in (400, 404) and not_found_ok:
                 raise NotFoundError("Earthquake not found in the USGS catalog") from e
             last_error = e
-        except httpx.HTTPError as e:
+        except (httpx.HTTPError, ValueError) as e:
             last_error = e
     raise UpstreamError("USGS earthquake service unavailable") from last_error
 
@@ -66,4 +66,11 @@ def fetch_recent(days: int = 3, min_mag: float = 4.0, limit: int = 100) -> list[
 
 
 def fetch_event(event_id: str) -> Event:
-    return parse_feature(_get({"format": "geojson", "eventid": event_id}))
+    data = _get({"format": "geojson", "eventid": event_id}, not_found_ok=True)
+    # Check for null magnitude
+    if data.get("properties", {}).get("mag") is None:
+        raise NotFoundError("Earthquake has no magnitude yet")
+    try:
+        return parse_feature(data)
+    except (KeyError, TypeError, ValueError) as e:
+        raise UpstreamError("USGS returned an unexpected response") from e
