@@ -9,11 +9,12 @@ from app.config import STUDENT_PATH, TEACHER_PATH, WINDOW
 from app.errors import ModelsNotLoadedError
 
 # Channel order each model expects. Windows arrive in ZNE order and are reordered in predict().
-# Measured with scripts/check_channel_order.py on 5 held-out STEAD events (mean abs error):
-#   teacher ZNE: P 8.0 ms, S 181.7 ms, det 1.00 | teacher ENZ: P 8.0 ms, S 137.7 ms, det 1.00
-#   student ZNE: P 8.0 ms, S 155.7 ms, det 1.00 | student ENZ: P 8.0 ms, S 104.3 ms, det 1.00
-# P and detection tie; ENZ gives lower S error for both models (small sample, modest margin).
-CHANNEL_ORDER = {"teacher": "ENZ", "student": "ENZ"}
+# Measured with scripts/check_channel_order.py on 200 held-out STEAD events
+# (P mean/median error, fraction of P picks within 0.5 s, S mean/median error):
+#   teacher ZNE: P 11.6/0.0 ms, 0.99 | S 310.6/60.0 ms    teacher ENZ: P 32.2/0.0 ms, 0.97 | S 129.6/41.5 ms
+#   student ZNE: P 32.6/0.0 ms, 0.97 | S 218.2/40.0 ms    student ENZ: P 33.1/0.0 ms, 0.97 | S 253.7/45.0 ms
+# ENZ is not clearly better for either model (teacher ENZ has worse P), so keep ZNE (training order).
+CHANNEL_ORDER = {"teacher": "ZNE", "student": "ZNE"}
 
 
 def reorder(windows: np.ndarray, order: str) -> np.ndarray:
