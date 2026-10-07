@@ -51,3 +51,13 @@ def test_info_reports_sizes_and_compression(runner):
     assert info["teacher"]["params"] > 300_000
     assert 5.5 < info["compression"] < 6.5
     assert info["student"]["size_mb"] < 1
+
+
+@pytest.mark.parametrize("name", ["teacher", "student"])
+def test_latency_reported_and_steady_state_not_slower(runner, stead, name):
+    windows = stead[0][:3]
+    runner.predict(name, windows)  # ensure steady state
+    first = runner.predict(name, windows).latency_ms
+    second = runner.predict(name, windows).latency_ms
+    assert first > 0 and second > 0
+    assert second < 5 * first  # generous bound: catches retracing/regressions, not noise

@@ -1,4 +1,5 @@
 """Load the teacher and student models once and run batched inference."""
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +16,11 @@ from app.errors import ModelsNotLoadedError
 #   student ZNE: P 32.6/0.0 ms, 0.97 | S 218.2/40.0 ms    student ENZ: P 33.1/0.0 ms, 0.97 | S 253.7/45.0 ms
 # ENZ is not clearly better for either model (teacher ENZ has worse P), so keep ZNE (training order).
 CHANNEL_ORDER = {"teacher": "ZNE", "student": "ZNE"}
+
+# FastAPI runs sync endpoints in a threadpool; without this lock two concurrent requests would
+# compete for the same CPU cores and inflate each other's measured latency.
+_INFERENCE_LOCK = threading.Lock()
+WARMUP_BATCH_SIZES = (1, 3)  # the app typically sends 3 windows
 
 
 def reorder(windows: np.ndarray, order: str) -> np.ndarray:
@@ -33,6 +39,7 @@ class ModelOutput:
 class ModelRunner:
     def __init__(self):
         self.models: dict = {}
+        self._compiled: dict = {}
         self.paths: dict[str, Path] = {}
 
     @property
@@ -49,18 +56,28 @@ class ModelRunner:
         )
         self.models["student"] = tf.keras.models.load_model(student_path, compile=False)
         self.paths = {"teacher": Path(teacher_path), "student": Path(student_path)}
-        warmup = np.zeros((1, WINDOW, 3), np.float32)
+        # A traced tf.function avoids eager-mode Python overhead (~30-100x faster on CPU).
+        self._compiled = {
+            name: tf.function(
+                lambda x, m=model: m(x, training=False),
+                input_signature=[tf.TensorSpec([None, WINDOW, 3], tf.float32)],
+                reduce_retracing=True,
+            )
+            for name, model in self.models.items()
+        }
         for name in self.models:
-            self.predict(name, warmup)  # first call builds the graph; keep it out of timings
+            for n in WARMUP_BATCH_SIZES:  # first calls trace/optimise; keep them out of timings
+                self.predict(name, np.zeros((n, WINDOW, 3), np.float32))
 
     def predict(self, name: str, windows: np.ndarray) -> ModelOutput:
         if not self.loaded:
             raise ModelsNotLoadedError("Models are not loaded")
         x = reorder(windows.astype(np.float32), CHANNEL_ORDER[name])
-        start = time.perf_counter()
-        outputs = self.models[name](x, training=False)
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        detection, p, s = (np.asarray(o)[..., 0] for o in outputs)
+        with _INFERENCE_LOCK:
+            start = time.perf_counter()
+            outputs = self._compiled[name](x)
+            detection, p, s = (o.numpy()[..., 0] for o in outputs)
+            elapsed_ms = (time.perf_counter() - start) * 1000
         return ModelOutput(detection, p, s, latency_ms=elapsed_ms / len(windows))
 
     def info(self) -> dict:
