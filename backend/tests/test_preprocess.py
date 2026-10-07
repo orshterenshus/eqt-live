@@ -56,3 +56,41 @@ def test_make_windows_shape_and_channels_last():
 def test_make_windows_rejects_wrong_channel_count():
     with pytest.raises(InsufficientDataError):
         make_windows(np.zeros((2, 7000)), 100.0)
+
+
+def _rms(x):
+    return float(np.sqrt(np.mean(np.square(x, dtype=np.float64))))
+
+
+def _sine(freq, fs, seconds=120):
+    t = np.arange(int(fs * seconds)) / fs
+    return np.tile(np.sin(2 * np.pi * freq * t), (3, 1))
+
+
+def test_filter_waveform_removes_microseism():
+    from app.preprocess import filter_waveform
+    out = filter_waveform(_sine(0.2, 100.0), 100.0)
+    mid = slice(3000, -3000)
+    assert _rms(out[:, mid]) < 0.1 * _rms(_sine(0.2, 100.0)[:, mid])
+
+
+def test_filter_waveform_keeps_passband():
+    from app.preprocess import filter_waveform
+    x = _sine(5.0, 100.0)
+    out = filter_waveform(x, 100.0)
+    mid = slice(3000, -3000)
+    assert _rms(out[:, mid]) > 0.8 * _rms(x[:, mid])
+
+
+def test_filter_waveform_40hz_uses_highpass_only():
+    from app.preprocess import filter_waveform
+    x = _sine(5.0, 40.0) + 3.0  # offset is removed by demean
+    out = filter_waveform(x, 40.0)
+    assert out.shape == x.shape and out.dtype == np.float32
+    assert np.all(np.isfinite(out)) and abs(out[:, 2000:-2000].mean()) < 0.05
+
+
+def test_filter_waveform_shape_dtype():
+    from app.preprocess import filter_waveform
+    out = filter_waveform(np.random.default_rng(0).normal(size=(3, 6000)), 100.0)
+    assert out.shape == (3, 6000) and out.dtype == np.float32

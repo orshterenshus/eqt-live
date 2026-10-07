@@ -1,12 +1,13 @@
 """Turn raw 3-component waveforms into model-ready windows.
 
-Mirrors the training pipeline (EQ_Project/kd_framework/data.py): 100 Hz,
-6000-sample windows, per-channel standardization, no extra filtering.
+Windowing mirrors the training pipeline (EQ_Project/kd_framework/data.py): 100 Hz,
+6000-sample windows, per-channel standardization. Real (non-STEAD) data is first passed
+through filter_waveform, which mirrors EQTransformer's mseed_predictor preprocessing.
 """
 import numpy as np
-from scipy.signal import resample
+from scipy.signal import butter, resample, sosfiltfilt
 
-from app.config import SAMPLING_RATE, STRIDE, WINDOW
+from app.config import FILTER_FREQMAX, FILTER_FREQMIN, SAMPLING_RATE, STRIDE, WINDOW
 from app.errors import InsufficientDataError
 
 
@@ -16,6 +17,31 @@ def resample_to(data: np.ndarray, fs: float, target_fs: float = SAMPLING_RATE) -
         return data.astype(np.float32)
     n_out = int(round(data.shape[1] * target_fs / fs))
     return resample(data, n_out, axis=1).astype(np.float32)
+
+
+def filter_waveform(data: np.ndarray, fs: float) -> np.ndarray:
+    """EqT-style conditioning of a (3, N) array: demean, zero-phase 1-45 Hz bandpass, taper.
+
+    Equivalent to obspy detrend('demean') + bandpass(1, 45, corners=2, zerophase=True) +
+    taper(max_percentage=0.001, max_length=2 s). obspy's zerophase applies an order-2 filter
+    forwards and backwards, which is exactly sosfiltfilt with butter(2, ...). If 45 Hz is at
+    or above Nyquist (e.g. 40 Hz data) only the 1 Hz high-pass is applied.
+    """
+    x = np.asarray(data, dtype=np.float64)
+    x = x - x.mean(axis=1, keepdims=True)
+    nyq = fs / 2.0
+    if FILTER_FREQMAX >= nyq:
+        sos = butter(2, FILTER_FREQMIN / nyq, btype="highpass", output="sos")
+    else:
+        sos = butter(2, [FILTER_FREQMIN / nyq, FILTER_FREQMAX / nyq], btype="bandpass",
+                     output="sos")
+    x = sosfiltfilt(sos, x, axis=1)
+    n_taper = min(int(0.001 * x.shape[1]), int(2 * fs))
+    if n_taper > 1:
+        ramp = 0.5 * (1 - np.cos(np.pi * np.arange(n_taper) / n_taper))
+        x[:, :n_taper] *= ramp
+        x[:, -n_taper:] *= ramp[::-1]
+    return x.astype(np.float32)
 
 
 def standardize(window: np.ndarray) -> np.ndarray:

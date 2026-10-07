@@ -13,7 +13,7 @@ from app.config import (
 )
 from app.errors import NotFoundError
 from app.picks import downsample, extract_picks, stitch
-from app.preprocess import make_windows, resample_to, standardize
+from app.preprocess import filter_waveform, make_windows, resample_to, standardize
 from app.schemas import AnalysisResult, Curves, ModelResult, Theoretical, Waveform
 
 log = logging.getLogger("eqt_live")
@@ -51,6 +51,7 @@ def _model_result(runner, name: str, windows, starts, start: UTCDateTime) -> Mod
 def analyze_array(runner, data: np.ndarray, fs: float, start: UTCDateTime, station_id: str,
                   distance_km: float | None = None, theoretical_p: UTCDateTime | None = None,
                   theoretical_s: UTCDateTime | None = None) -> AnalysisResult:
+    data = filter_waveform(data, fs)
     windows, starts = make_windows(data, fs)
     teacher = _model_result(runner, "teacher", windows, starts, start)
     student = _model_result(runner, "student", windows, starts, start)

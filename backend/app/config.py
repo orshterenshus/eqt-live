@@ -15,6 +15,8 @@ STRIDE = 3000
 DETECTION_THRESHOLD = 0.5
 PICK_THRESHOLD = 0.3
 DISPLAY_POINTS = 3000
+FILTER_FREQMIN = 1.0  # Hz, EQTransformer's real-data bandpass
+FILTER_FREQMAX = 45.0
 
 # External services
 USGS_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
