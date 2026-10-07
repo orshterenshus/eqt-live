@@ -179,3 +179,31 @@ def test_models_not_loaded(waveform_calls):
         assert c.get("/health").json()["models_loaded"] is False
         r = c.get("/api/analyze", params={"event_id": "us1", "station": STATION})
         assert r.status_code == 503
+
+
+def test_event_id_length_capped(client):
+    long_id = "a" * 41
+    r = client.get("/api/analyze", params={"event_id": long_id, "station": STATION})
+    assert r.status_code == 422 and r.json()["error"] == "invalid_request"
+    r = client.get(f"/api/events/{long_id}/stations")
+    assert r.status_code == 422 and r.json()["error"] == "invalid_request"
+
+
+def test_stations_cached(client, monkeypatch):
+    calls = []
+    orig = stations.fetch_nearby_channels
+
+    def counting(lat, lon, time):
+        calls.append(1)
+        return orig(lat, lon, time)
+
+    monkeypatch.setattr(stations, "fetch_nearby_channels", counting)
+    for _ in range(2):
+        assert client.get("/api/events/us1/stations").status_code == 200
+    assert len(calls) == 1
+
+
+def test_unknown_api_path_is_json_404(client):
+    r = client.get("/api/nope")
+    assert r.status_code == 404
+    assert r.json()["error"] == "not_found" and isinstance(r.json()["message"], str)

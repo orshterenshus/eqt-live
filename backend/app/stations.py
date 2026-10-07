@@ -1,4 +1,5 @@
 """Seismic stations and waveforms via FDSN (ObsPy), plus theoretical arrival times."""
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
@@ -69,11 +70,17 @@ def select_stations(channels: list[ChannelInfo], lat: float, lon: float) -> list
     return result[:MAX_STATIONS]
 
 
+_STATION_ID_RE = re.compile(r"^([A-Z0-9]{1,2})\.([A-Z0-9]{1,5})\.([A-Z0-9]{0,2})\.([A-Z]{2})$")
+
+
 def parse_station_id(station_id: str) -> tuple[str, str, str, str]:
-    parts = station_id.split(".")
-    if len(parts) != 4 or not parts[0] or not parts[1] or not parts[3]:
-        raise InvalidRequestError(f"Station id must look like NET.STA.LOC.BAND, got '{station_id}'")
-    return parts[0], parts[1], parts[2], parts[3]
+    """Strictly validate NET.STA.LOC.BAND (no FDSN wildcards or free-form input)."""
+    m = _STATION_ID_RE.match(station_id.upper())
+    if not m or m.group(4) not in BAND_PREFERENCE:
+        raise InvalidRequestError(
+            f"Station id must look like NET.STA.LOC.BAND (band HH or BH), got '{station_id[:30]}'"
+        )
+    return m.group(1), m.group(2), m.group(3), m.group(4)
 
 
 def stream_to_array(stream: Stream) -> tuple[np.ndarray, float, UTCDateTime]:
@@ -133,10 +140,12 @@ def theoretical_arrivals(distance_km: float, depth_km: float) -> tuple[float | N
 
 # ---- Network wrappers (thin; mocked in tests) ----------------------------------------
 
+@lru_cache(maxsize=1)
 def _client():
     from obspy.clients.fdsn import Client
 
-    return Client(FDSN_PROVIDER, timeout=HTTP_TIMEOUT)
+    # Standard IRIS endpoints: skip service discovery. Failed construction is not cached.
+    return Client(FDSN_PROVIDER, timeout=HTTP_TIMEOUT, _discover_services=False)
 
 
 def _with_retry(fn, what: str):

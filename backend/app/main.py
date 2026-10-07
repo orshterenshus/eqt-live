@@ -3,10 +3,12 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Path, Query, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import events, service
 from app.cache import ResultCache
@@ -19,11 +21,13 @@ from app.schemas import (
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("eqt_live")
+EVENT_ID_MAX = 40
 
 
 def create_app(runner=None, load_models: bool = True) -> FastAPI:
     runner = runner or ModelRunner()
     cache = ResultCache()
+    live_cache = ResultCache(ttl=120, maxsize=16)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -49,6 +53,16 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
         return JSONResponse(status_code=422,
                             content={"error": "invalid_request", "message": "; ".join(parts)})
 
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(request: Request, exc: StarletteHTTPException):
+        if not request.url.path.startswith("/api"):
+            return await http_exception_handler(request, exc)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": "not_found" if exc.status_code == 404 else "http_error",
+                     "message": str(exc.detail)},
+        )
+
     @app.exception_handler(Exception)
     async def unexpected_error_handler(request: Request, exc: Exception):
         log.exception("Unhandled error on %s", request.url.path)
@@ -65,11 +79,14 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
         return [EventOut(**asdict(e)) for e in events.fetch_recent(days=days, min_mag=min_mag)]
 
     @app.get("/api/events/{event_id}/stations", response_model=list[StationOut])
-    def get_stations(event_id: str):
-        return [StationOut(id=s.id, **asdict(s)) for s in service.list_stations(event_id)]
+    def get_stations(event_id: str = Path(max_length=EVENT_ID_MAX)):
+        return cache.get_or_compute(
+            ("stations", event_id),
+            lambda: [StationOut(id=s.id, **asdict(s)) for s in service.list_stations(event_id)],
+        )
 
     @app.get("/api/analyze", response_model=AnalysisResult)
-    def analyze(event_id: str, station: str):
+    def analyze(event_id: str = Query(max_length=EVENT_ID_MAX), station: str = Query(max_length=40)):
         return cache.get_or_compute(
             ("event", event_id, station),
             lambda: service.analyze_event(runner, event_id, station),
@@ -81,7 +98,7 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
 
     @app.get("/api/live", response_model=AnalysisResult)
     def live(station: str):
-        return service.analyze_live(runner, station, cache)
+        return service.analyze_live(runner, station, live_cache)
 
     @app.get("/api/models", response_model=ModelsOut)
     def models_info():

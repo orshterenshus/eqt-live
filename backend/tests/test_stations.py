@@ -116,3 +116,17 @@ def test_select_stations_accepts_z12_but_not_z1():
         ch("IU", "BAD", "00", "BH1"),
     ]
     assert [s.station for s in stations.select_stations(channels, 35.0, 139.0)] == ["OK"]
+
+
+@pytest.mark.parametrize("bad", [
+    "*.*.*.HH", "IU.AN?O.00.BH", "IU.AN,MO.00.BH", "IU.ANMO.00.LH", "IUU.ANMO.00.BH",
+    "IU.ANMOXX.00.BH", "IU.ANMO.000.BH", "IU.ANMO.00.BHZ", "IU.ANMO.00.", "..00.BH",
+])
+def test_parse_station_id_rejects_wildcards_and_malformed(bad):
+    with pytest.raises(InvalidRequestError):
+        stations.parse_station_id(bad)
+
+
+def test_parse_station_id_normalizes_case():
+    assert stations.parse_station_id("iu.anmo.00.bh") == ("IU", "ANMO", "00", "BH")
+    assert stations.parse_station_id("jp.abc..hh") == ("JP", "ABC", "", "HH")
