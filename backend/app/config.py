@@ -33,7 +33,7 @@ LIVE_STATIONS = [
     ("II.PFO.00.BH", "II.PFO – Pinon Flat, California, USA"),
     ("IU.COLA.00.BH", "IU.COLA – College, Alaska, USA"),
     ("IU.HRV.00.BH", "IU.HRV – Harvard, Massachusetts, USA"),
-    ("IU.MAJO.00.BH", "IU.MAJO – Matsushiro, Japan"),
+    ("II.ERM.00.BH", "II.ERM – Erimo, Hokkaido, Japan"),
     ("IU.TATO.00.BH", "IU.TATO – Taipei, Taiwan"),
     ("IU.SNZO.00.BH", "IU.SNZO – Wellington, New Zealand"),
     ("IU.KONO.00.BH", "IU.KONO – Kongsberg, Norway"),

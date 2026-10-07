@@ -41,7 +41,7 @@ class StationInfo:
 
 
 def select_stations(channels: list[ChannelInfo], lat: float, lon: float) -> list[StationInfo]:
-    """Keep stations with Z/N/E in a preferred band, one entry per station, nearest first."""
+    """Keep stations with Z plus N/E (or 1/2) in a preferred band; one per station."""
     components: dict[tuple, set[str]] = defaultdict(set)
     coords: dict[tuple, tuple[float, float]] = {}
     for c in channels:
@@ -53,7 +53,7 @@ def select_stations(channels: list[ChannelInfo], lat: float, lon: float) -> list
 
     best: dict[tuple, tuple] = {}
     for key, comps in components.items():
-        if not {"Z", "N", "E"} <= comps:
+        if "Z" not in comps or not ({"N", "E"} <= comps or {"1", "2"} <= comps):
             continue
         net, sta, loc, band = key
         rank = (BAND_PREFERENCE.index(band), loc)
@@ -98,6 +98,18 @@ def stream_to_array(stream: Stream) -> tuple[np.ndarray, float, UTCDateTime]:
     n = min(len(t.data) for t in traces)
     data = np.stack([t.data[:n].astype(np.float32) for t in traces])
     return data, rates.pop(), start
+
+
+def orient_to_zne(stream: Stream, inventory) -> Stream:
+    """Rotate Z/1/2 to Z/N/E using the channel azimuths/dips in the inventory."""
+    if {tr.stats.channel[-1] for tr in stream} >= {"Z", "N", "E"}:
+        return stream
+    st = stream.copy()
+    try:
+        st.rotate("->ZNE", inventory=inventory)
+    except Exception as e:
+        raise InsufficientDataError("Could not orient the horizontal channels") from e
+    return st
 
 
 @lru_cache(maxsize=1)
@@ -173,7 +185,18 @@ def fetch_station_coords(network: str, station: str) -> tuple[float, float]:
 
 def fetch_waveform(network: str, station: str, location: str, band: str,
                    start: UTCDateTime, end: UTCDateTime) -> Stream:
-    return _with_retry(
-        lambda: _client().get_waveforms(network, station, location or "--", f"{band}?", start, end),
+    loc = location or "--"
+    stream = _with_retry(
+        lambda: _client().get_waveforms(network, station, loc, f"{band}?", start, end),
         "waveform data",
     )
+    if any(tr.stats.channel[-1] in "12" for tr in stream):
+        inventory = _with_retry(
+            lambda: _client().get_stations(
+                network=network, station=station, location=loc, channel=f"{band}?",
+                starttime=start, endtime=end, level="channel",
+            ),
+            "channel metadata",
+        )
+        stream = orient_to_zne(stream, inventory)
+    return stream

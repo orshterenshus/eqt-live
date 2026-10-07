@@ -63,3 +63,56 @@ def test_theoretical_arrivals_at_100_km():
     p, s = stations.theoretical_arrivals(100.0, 10.0)
     assert 12 < p < 20
     assert 22 < s < 35
+
+
+# ---- 1/2 horizontals ---------------------------------------------------------------
+
+def _inventory():
+    from obspy.core.inventory import Channel, Inventory, Network, Station
+
+    def chan(code, az, dip):
+        return Channel(code, "00", 35.0, 139.0, 0.0, 0.0, azimuth=az, dip=dip,
+                       sample_rate=100.0)
+
+    sta = Station("X", 35.0, 139.0, 0.0,
+                  channels=[chan("BHZ", 0, -90), chan("BH1", 90, 0), chan("BH2", 180, 0)])
+    return Inventory([Network("IU", stations=[sta])], source="test")
+
+
+def _oriented(comp_data):
+    traces = []
+    for comp, scale in comp_data.items():
+        tr = _trace(comp)
+        tr.data = tr.data * scale
+        traces.append(tr)
+    return Stream(traces)
+
+
+def test_orient_to_zne_uses_real_azimuths():
+    st = _oriented({"Z": 1.0, "1": 2.0, "2": 3.0})
+    out = stations.orient_to_zne(st, _inventory())
+    data, _, _ = stations.stream_to_array(out)
+    ref = np.arange(1000, dtype=np.float32)
+    np.testing.assert_allclose(data[1], -3.0 * ref, atol=1e-2)  # N = -BH2
+    np.testing.assert_allclose(data[2], 2.0 * ref, atol=1e-2)   # E = BH1
+
+
+def test_orient_to_zne_passes_through_zne():
+    st = Stream([_trace("Z"), _trace("N"), _trace("E")])
+    assert stations.orient_to_zne(st, None) is st
+
+
+def test_orient_to_zne_failure_raises():
+    st = Stream([_trace("Z"), _trace("1"), _trace("2")])
+    from obspy.core.inventory import Inventory
+    with pytest.raises(InsufficientDataError):
+        stations.orient_to_zne(st, Inventory([], source="test"))
+
+
+def test_select_stations_accepts_z12_but_not_z1():
+    channels = [
+        *(ch("IU", "OK", "00", f"BH{c}") for c in "Z12"),
+        ch("IU", "BAD", "00", "BHZ"),
+        ch("IU", "BAD", "00", "BH1"),
+    ]
+    assert [s.station for s in stations.select_stations(channels, 35.0, 139.0)] == ["OK"]
