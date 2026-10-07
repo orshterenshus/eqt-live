@@ -65,8 +65,15 @@ Browser ──► FastAPI
   (plus the `f1` metric stub) are copied from `EQTransformer/core/EqT_utils.py` (MIT license),
   with attribution.
 - **Preprocessing parity with training.** Mirrors `EQ_Project/kd_framework/data.py`: resample to
-  6000 samples per 60 s window and per-channel standardization. No extra filtering is applied,
-  since training applied none.
+  6000 samples per 60 s window and per-channel standardization. Real FDSN data is additionally
+  demeaned, band-passed 1–45 Hz (high-pass 1 Hz when 45 Hz ≥ Nyquist) and tapered before
+  windowing, mirroring EQTransformer's own `mseed_predictor` pipeline (STEAD traces were already
+  filtered; raw broadband data is dominated by sub-1 Hz microseism otherwise).
+- **Horizontal orientation.** Stations that record `1`/`2` horizontals are rotated to N/E with
+  their channel azimuths (`Stream.rotate("->ZNE", inventory=...)`).
+- **Known behavior:** the original (non-conservative) EQTransformer model raises detections on
+  quiet noise at many stations; the distilled student is markedly more conservative. Thresholds
+  are not tuned to hide this.
 - **Channel order must be verified first.** SeisBench's default component order is `ZNE`, while
   the original EQTransformer expects `ENZ`. Task 1 of the plan establishes which order each model
   actually received in training (using a STEAD sample with known picks) and fixes it as a
