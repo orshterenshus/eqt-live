@@ -54,10 +54,9 @@ def test_info_reports_sizes_and_compression(runner):
 
 
 @pytest.mark.parametrize("name", ["teacher", "student"])
-def test_latency_reported_and_steady_state_not_slower(runner, stead, name):
-    windows = stead[0][:3]
-    runner.predict(name, windows)  # ensure steady state
-    first = runner.predict(name, windows).latency_ms
-    second = runner.predict(name, windows).latency_ms
-    assert first > 0 and second > 0
-    assert second < 5 * first  # generous bound: catches retracing/regressions, not noise
+def test_compiled_function_traces_once(runner, stead, name):
+    windows = stead[0]
+    for n in (1, 3):
+        assert runner.predict(name, windows[:n]).latency_ms > 0
+    # Fixed input_signature: every batch size shares one trace (no eager fallback, no retracing).
+    assert runner._compiled[name].experimental_get_tracing_count() == 1

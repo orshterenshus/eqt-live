@@ -61,7 +61,6 @@ class ModelRunner:
             name: tf.function(
                 lambda x, m=model: m(x, training=False),
                 input_signature=[tf.TensorSpec([None, WINDOW, 3], tf.float32)],
-                reduce_retracing=True,
             )
             for name, model in self.models.items()
         }
