@@ -2,41 +2,48 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "./api/client";
 import { AboutPanel } from "./components/AboutPanel";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { LiveTab } from "./tabs/LiveTab";
 import { RecentTab } from "./tabs/RecentTab";
+import { ThemeContext, useTheme } from "./theme";
 
-type Tab = "recent" | "live" | "about";
+type Tab = "recent" | "live" | "method";
 
 const TABS: [Tab, string][] = [
-  ["recent", "Recent Earthquakes"],
-  ["live", "Live Station"],
-  ["about", "About"],
+  ["recent", "Recent"],
+  ["live", "Live"],
+  ["method", "Method"],
 ];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("recent");
+  const [theme, toggleTheme] = useTheme();
   const modelsQ = useQuery({ queryKey: ["models"], queryFn: api.models });
   return (
-    <div className="app">
-      <header>
-        <h1>🌍 EQT-Live</h1>
-        <p className="muted">
-          Earthquake detection on live seismic data: the original EQTransformer vs. a 6x smaller
-          distilled model
-        </p>
-        <nav>
-          {TABS.map(([id, label]) => (
-            <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
-              {label}
-            </button>
-          ))}
-        </nav>
-      </header>
-      <main>
-        {tab === "recent" && <RecentTab models={modelsQ.data} />}
-        {tab === "live" && <LiveTab models={modelsQ.data} />}
-        {tab === "about" && <AboutPanel models={modelsQ.data} />}
-      </main>
-    </div>
+    <ThemeContext.Provider value={theme}>
+      <div className="app">
+        <header className="topbar">
+          <span className="wordmark">EQT·LIVE</span>
+          <nav className="nav" aria-label="Sections">
+            {TABS.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-current={tab === id ? "page" : undefined}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          </nav>
+        </header>
+        <main>
+          {tab === "recent" && <RecentTab models={modelsQ.data} />}
+          {tab === "live" && <LiveTab models={modelsQ.data} />}
+          {tab === "method" && <AboutPanel models={modelsQ.data} />}
+        </main>
+      </div>
+    </ThemeContext.Provider>
   );
 }
