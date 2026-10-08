@@ -63,14 +63,29 @@ describe("verdictSentence: event mode", () => {
       "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran 5.0× faster.",
     );
   });
-  it("both close, similar speed when ratio is below 1.05", () => {
-    expect(verdictSentence(result(model(true, 30.27, 8), model(true, 30.34, 10), 30))).toBe(
+  it("both close, faster by 1.2x", () => {
+    expect(verdictSentence(result(model(true, 30.27, 120), model(true, 30.34, 100), 30))).toBe(
+      "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran 1.2× faster.",
+    );
+  });
+  it("both close, similar speed at ratio 1.02", () => {
+    expect(verdictSentence(result(model(true, 30.27, 102), model(true, 30.34, 100), 30))).toBe(
       "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran at a similar speed.",
     );
   });
-  it("both close, similar speed when ratio is 1.02", () => {
-    expect(verdictSentence(result(model(true, 30.27, 102), model(true, 30.34, 100), 30))).toBe(
+  it("both close, similar speed at ratio 0.96", () => {
+    expect(verdictSentence(result(model(true, 30.27, 96), model(true, 30.34, 100), 30))).toBe(
       "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran at a similar speed.",
+    );
+  });
+  it("both close, no speed clause at ratio 0.8", () => {
+    expect(verdictSentence(result(model(true, 30.27, 8), model(true, 30.34, 10), 30))).toBe(
+      "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher.",
+    );
+  });
+  it("both close, no speed clause when student latency is zero", () => {
+    expect(verdictSentence(result(model(true, 30.27, 10), model(true, 30.34, 0), 30))).toBe(
+      "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher.",
     );
   });
   it("both fair, student clearly worse", () => {
@@ -98,9 +113,14 @@ describe("verdictSentence: event mode", () => {
       "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.",
     );
   });
-  it("one far, one with no pick (fallback)", () => {
+  it("teacher far, student detected with no pick", () => {
     expect(verdictSentence(result(model(true, 40, 10), model(true, null, 5), 30))).toBe(
-      "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.",
+      "The teacher picked an arrival far from the expected time (+10.00 s), and the other model did not pick P.",
+    );
+  });
+  it("student far, teacher detected with no pick", () => {
+    expect(verdictSentence(result(model(true, null, 10), model(true, 40, 5), 30))).toBe(
+      "The student picked an arrival far from the expected time (+10.00 s), and the other model did not pick P.",
     );
   });
   it("teacher detected and picked close, student undetected", () => {

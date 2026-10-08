@@ -23,6 +23,12 @@ export function speedup(r: AnalysisResult): number | null {
 
 const usable = (q: PickQuality | null) => q === "close" || q === "fair";
 
+function speedClause(ratio: number | null): string {
+  if (ratio !== null && ratio >= 1.05) return ` and ran ${ratio.toFixed(1)}× faster`;
+  if (ratio !== null && ratio >= 0.95) return " and ran at a similar speed";
+  return "";
+}
+
 export function verdictSentence(r: AnalysisResult): string {
   const { teacher: t, student: s } = r;
   const expected = r.theoretical.p_time;
@@ -60,9 +66,7 @@ export function verdictSentence(r: AnalysisResult): string {
     const td = Math.abs(secondsBetween(expected, tp!));
     const sd = Math.abs(secondsBetween(expected, sp!));
     const verb = sd <= td + 0.5 ? "matched" : "came close to";
-    const ratio = speedup(r);
-    const speed = ratio !== null && ratio >= 1.05 ? ` and ran ${ratio.toFixed(1)}× faster` : " and ran at a similar speed";
-    return `Both models found the P wave within ${Math.max(td, sd).toFixed(2)} s of the expected arrival. The student ${verb} the teacher${speed}.`;
+    return `Both models found the P wave within ${Math.max(td, sd).toFixed(2)} s of the expected arrival. The student ${verb} the teacher${speedClause(speedup(r))}.`;
   }
   if (usable(tq) || usable(sq)) {
     const useTeacher = usable(tq);
@@ -76,6 +80,12 @@ export function verdictSentence(r: AnalysisResult): string {
   }
   if (tq === "none" && sq === "none") {
     return "Both models detected the earthquake, but neither was confident about the exact P arrival.";
+  }
+  if (tq === "far" && sq === "none") {
+    return `The teacher picked an arrival far from the expected time (${formatDelta(secondsBetween(expected, tp!))}), and the other model did not pick P.`;
+  }
+  if (tq === "none" && sq === "far") {
+    return `The student picked an arrival far from the expected time (${formatDelta(secondsBetween(expected, sp!))}), and the other model did not pick P.`;
   }
   return "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.";
 }
