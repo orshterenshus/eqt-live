@@ -102,32 +102,30 @@ function pickQuality(pick: string | null, expected: string | null): PickQuality 
 function verdictSentence(r: AnalysisResult): string;
 ```
 
-Sentence rules, first match wins:
+Sentence rules, first match wins. The source of truth is `src/verdict.ts` and its tests.
 
-Event mode (theoretical P available):
-(An undetected model's pick counts as absent. A speed-up is claimed only when the ratio is ≥ 1.05;
-otherwise the text says "ran at a similar speed". If exactly one model detected, the verdict says
-"Only the {model} detected the earthquake at this station…" with its pick offset, or notes that it
-did not pick P. Misses are attributed to "another event or a mis-pick", never stated as certain.)
-1. Neither model detected → "Neither model detected the earthquake at this station. It may be
-   too weak or too far away. Try a closer station."
-2. Both P picks close or fair → "Both models found the P wave within {max|Δ|} s of the expected
-   arrival. The student {matched|came close to} the teacher and ran {speedup}× faster."
-   ("matched" if the student's |Δ| ≤ the teacher's |Δ| + 0.5 s.)
-3. Only one model's P is close/fair → "Only the {teacher|student} found the P wave near the
-   expected arrival ({Δ} s). The other {did not pick it|picked a different arrival, probably
-   another event}."
-4. At least one detected but neither model picked P → "Both models detected the earthquake, but
-   neither was confident about the exact P arrival."
-5. Otherwise → "The models detected seismic activity but picked arrivals far from the expected
-   time, likely a different event in the window."
+Event mode (theoretical P available; an undetected model's pick counts as absent):
+1. Neither detected → "Neither model detected the earthquake at this station. It may be too weak or
+   too far away. Try a closer station."
+2. Exactly one detected → "Only the {model} detected the earthquake at this station; its P pick is
+   {Δ} from the expected arrival." (or "…, but it did not pick an exact P arrival.")
+3. Both P picks close or fair → "Both models found the P wave within {max|Δ|} s of the expected
+   arrival. The student {matched|came close to} the teacher{speed}." Here "matched" means the
+   student's |Δ| ≤ the teacher's + 0.5 s. {speed} is " and ran {r}× faster" if r ≥ 1.05, " and ran at
+   a similar speed" if 0.95 ≤ r < 1.05, and nothing otherwise.
+4. Exactly one usable → "Only the {model} found the P wave near the expected arrival ({Δ}). The other
+   {did not pick it | picked a different arrival (another event or a mis-pick)}."
+5. Neither picked → "Both models detected the earthquake, but neither was confident about the exact
+   P arrival."
+6. One far, the other not picked → "The {model} picked an arrival far from the expected time ({Δ}),
+   and the other model did not pick P."
+7. Both far → "Both models detected seismic activity but picked arrivals far from the expected time,
+   possibly a different event in the window."
 
-Live mode (no theoretical):
-1. Neither detected → "Quiet: neither model detected an earthquake in the last two minutes."
-2. Both detected → "Both models detected seismic activity."
-3. Teacher only → "The teacher flags activity but the student does not. The original model often
-   over-triggers on quiet live noise."
-4. Student only → "The student flags activity but the teacher does not."
+Live mode (no theoretical): "Quiet: neither model detected an earthquake in the last two minutes." /
+"Both models detected seismic activity." / "The teacher flags activity but the student does not. In
+our tests on live data, the original model often over-triggers on quiet noise." / "The student flags
+activity but the teacher does not."
 
 The speedup is formatted with 1 decimal place. Δ values use 2 significant decimals with an explicit
 sign. Vitest covers every branch.
