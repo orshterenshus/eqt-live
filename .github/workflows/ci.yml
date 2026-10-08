@@ -67,7 +67,7 @@ jobs:
       group: hf-deploy
       cancel-in-progress: true
     needs: [backend, frontend, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HF_SPACE != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
