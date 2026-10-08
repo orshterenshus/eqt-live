@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/orshterenshus/eqt-live/actions/workflows/ci.yml/badge.svg)](https://github.com/orshterenshus/eqt-live/actions/workflows/ci.yml)
 
-**Live demo:** coming soon (Google Cloud Run)
+**Live demo:** https://eqt-live-6nkkumst7q-uc.a.run.app
+
+![EQT-Live analyzing a M4.4 earthquake in Chile](docs/screenshot.jpg)
 
 EQT-Live runs two deep-learning models side by side on **real seismic recordings**:
 
