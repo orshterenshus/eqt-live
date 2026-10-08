@@ -14,3 +14,10 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
   if (hours < 48) return `${hours} h ago`;
   return `${Math.round(hours / 24)} d ago`;
 }
+
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+export function formatDateline(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(now.getUTCDate())} ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()} · ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())} UTC`;
+}

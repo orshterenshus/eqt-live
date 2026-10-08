@@ -7,6 +7,7 @@ import { EventList } from "../components/EventList";
 import { EventMap } from "../components/EventMap";
 import { Spinner } from "../components/Spinner";
 import { StationPicker } from "../components/StationPicker";
+import { formatDateline } from "../format";
 
 export function RecentTab({ models }: { models?: ModelsInfo }) {
   const [minMag, setMinMag] = useState(4);
@@ -36,6 +37,19 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
 
   return (
     <>
+      <section className="intro">
+        <div className="dateline">● {formatDateline()}</div>
+        <h1 className="headline">
+          A 61K-parameter model,
+          <br />
+          <em>listening to the earth.</em>
+        </h1>
+        <p className="lede">
+          Pick a real earthquake from the last 3 days. We download two minutes of recordings from
+          the nearest station and let both models find the P and S waves.
+        </p>
+      </section>
+
       <section className="panel two-col">
         <EventMap events={events} selectedId={eventId} onSelect={setEventId} />
         <div>
@@ -50,7 +64,7 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
             </select>
           </label>
           {eventsQ.isPending ? (
-            <Spinner text="Loading recent earthquakes…" />
+            <Spinner text="loading recent earthquakes" />
           ) : eventsQ.isError ? (
             <ErrorBox error={eventsQ.error} />
           ) : (
@@ -65,7 +79,7 @@ export function RecentTab({ models }: { models?: ModelsInfo }) {
             M{selected.magnitude.toFixed(1)} · {selected.place}
           </h2>
           {stationsQ.isPending ? (
-            <Spinner text="Finding nearby stations…" />
+            <Spinner text="finding nearby stations" />
           ) : stationsQ.isError ? (
             <ErrorBox error={stationsQ.error} />
           ) : stationsQ.data.length === 0 ? (

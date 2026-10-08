@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatUtcTime, secondsBetween, timeAgo } from "./format";
+import { formatDateline, formatUtcTime, secondsBetween, timeAgo } from "./format";
 
 describe("format", () => {
   it("formats UTC time with hundredths", () => {
@@ -14,5 +14,11 @@ describe("format", () => {
     expect(timeAgo("2026-10-07T11:45:00Z", now)).toBe("15 min ago");
     expect(timeAgo("2026-10-07T07:00:00Z", now)).toBe("5 h ago");
     expect(timeAgo("2026-10-04T12:00:00Z", now)).toBe("3 d ago");
+  });
+});
+
+describe("formatDateline", () => {
+  it("formats a UTC dateline", () => {
+    expect(formatDateline(new Date("2026-10-08T14:21:07Z"))).toBe("08 OCT 2026 · 14:21 UTC");
   });
 });

@@ -19,11 +19,7 @@ export function EventMap({ events, selectedId, onSelect }: Props) {
           key={e.id}
           center={[e.lat, e.lon]}
           radius={Math.max(3, e.magnitude * 2)}
-          pathOptions={{
-            color: e.id === selectedId ? "#dc2626" : "#2563eb",
-            weight: e.id === selectedId ? 3 : 1,
-            fillOpacity: 0.5,
-          }}
+          pathOptions={{ className: e.id === selectedId ? "quake quake-selected" : "quake" }}
           eventHandlers={{ click: () => onSelect(e.id) }}
         >
           <Tooltip>

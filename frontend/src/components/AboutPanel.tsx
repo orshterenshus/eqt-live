@@ -5,8 +5,8 @@ export function AboutPanel({ models }: { models?: ModelsInfo }) {
     ? `${models.student.params.toLocaleString()} parameters, ${models.compression.toFixed(1)}x fewer than the teacher's ${models.teacher.params.toLocaleString()}`
     : "about 6x fewer parameters than the teacher";
   return (
-    <section className="panel">
-      <h2>About</h2>
+    <section className="panel method">
+      <h2>Method</h2>
       <p>
         EQTransformer is a deep-learning model that detects earthquakes and picks the arrival
         times of P and S waves. In my final project at Braude College (with Shiraz Balmas) we
