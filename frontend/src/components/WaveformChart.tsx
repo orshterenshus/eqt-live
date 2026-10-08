@@ -1,5 +1,6 @@
 import type { AnalysisResult } from "../api/client";
 import { secondsBetween } from "../format";
+import { effectivePick } from "../verdict";
 import { useThemeColors, type ThemeColors } from "../theme";
 import { Plot } from "./Plot";
 
@@ -8,8 +9,14 @@ const FONT = { family: "IBM Plex Mono, Consolas, monospace", size: 10 };
 
 function pickLines(result: AnalysisResult, c: ThemeColors) {
   const sources = [
-    { times: result.teacher, color: c.teacher, dash: "solid" },
-    { times: result.student, color: c.student, dash: "dash" },
+    {
+      times: { p_time: effectivePick(result.teacher, "p"), s_time: effectivePick(result.teacher, "s") },
+      color: c.teacher, dash: "solid",
+    },
+    {
+      times: { p_time: effectivePick(result.student, "p"), s_time: effectivePick(result.student, "s") },
+      color: c.student, dash: "dash",
+    },
     { times: result.theoretical, color: c.expected, dash: "dot" },
   ];
   const shapes: object[] = [];
@@ -46,6 +53,8 @@ export function WaveformChart({ result }: { result: AnalysisResult }) {
       layout={{
         height: HEIGHT, margin: { l: 44, r: 12, t: 22, b: 36 },
         paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { ...FONT, color: c.muted },
+        hoverlabel: { bgcolor: "#11100e", bordercolor: c.hair, font: { ...FONT, color: c.trace } },
+        modebar: { bgcolor: "rgba(0,0,0,0)", color: c.muted, activecolor: c.trace },
         grid: { rows: 3, columns: 1, pattern: "coupled" },
         xaxis: { ...axis, title: { text: "seconds", font: FONT } },
         yaxis: { ...axis, title: { text: "Z", font: FONT } },
