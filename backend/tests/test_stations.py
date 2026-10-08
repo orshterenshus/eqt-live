@@ -130,3 +130,8 @@ def test_parse_station_id_rejects_wildcards_and_malformed(bad):
 def test_parse_station_id_normalizes_case():
     assert stations.parse_station_id("iu.anmo.00.bh") == ("IU", "ANMO", "00", "BH")
     assert stations.parse_station_id("jp.abc..hh") == ("JP", "ABC", "", "HH")
+
+
+def test_parse_station_id_rejects_trailing_newline():
+    with pytest.raises(InvalidRequestError):
+        stations.parse_station_id("IU.ANMO.00.BH\n")

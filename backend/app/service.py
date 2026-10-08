@@ -115,4 +115,4 @@ def analyze_live(runner, station_id: str, cache: ResultCache) -> AnalysisResult:
         data, fs, data_start = stations.stream_to_array(stream)
         return analyze_array(runner, data, fs, data_start, station_id)
 
-    return cache.get_or_compute(("live", station_id, end.timestamp), compute)
+    return cache.get_or_compute(("live", ".".join((net, sta, loc, band)), end.timestamp), compute)

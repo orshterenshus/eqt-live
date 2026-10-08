@@ -75,7 +75,7 @@ _STATION_ID_RE = re.compile(r"^([A-Z0-9]{1,2})\.([A-Z0-9]{1,5})\.([A-Z0-9]{0,2})
 
 def parse_station_id(station_id: str) -> tuple[str, str, str, str]:
     """Strictly validate NET.STA.LOC.BAND (no FDSN wildcards or free-form input)."""
-    m = _STATION_ID_RE.match(station_id.upper())
+    m = _STATION_ID_RE.fullmatch(station_id.upper())
     if not m or m.group(4) not in BAND_PREFERENCE:
         raise InvalidRequestError(
             f"Station id must look like NET.STA.LOC.BAND (band HH or BH), got '{station_id[:30]}'"

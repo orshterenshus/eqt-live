@@ -15,6 +15,7 @@ from app.cache import ResultCache
 from app.config import LIVE_STATIONS, STATIC_DIR
 from app.errors import AppError
 from app.models import ModelRunner
+from app.stations import parse_station_id
 from app.schemas import (
     AnalysisResult, EventOut, HealthOut, LiveStationOut, ModelsOut, StationOut,
 )
@@ -22,12 +23,13 @@ from app.schemas import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("eqt_live")
 EVENT_ID_MAX = 40
+STATION_MAX = 16
 
 
 def create_app(runner=None, load_models: bool = True) -> FastAPI:
     runner = runner or ModelRunner()
     cache = ResultCache()
-    live_cache = ResultCache(ttl=120, maxsize=16)
+    live_cache = ResultCache(ttl=60, maxsize=16)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -55,12 +57,13 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error_handler(request: Request, exc: StarletteHTTPException):
-        if not request.url.path.startswith("/api"):
+        if not (request.url.path == "/api" or request.url.path.startswith("/api/")):
             return await http_exception_handler(request, exc)
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": "not_found" if exc.status_code == 404 else "http_error",
                      "message": str(exc.detail)},
+            headers=getattr(exc, "headers", None),
         )
 
     @app.exception_handler(Exception)
@@ -86,9 +89,9 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
         )
 
     @app.get("/api/analyze", response_model=AnalysisResult)
-    def analyze(event_id: str = Query(max_length=EVENT_ID_MAX), station: str = Query(max_length=40)):
+    def analyze(event_id: str = Query(max_length=EVENT_ID_MAX), station: str = Query(max_length=STATION_MAX)):
         return cache.get_or_compute(
-            ("event", event_id, station),
+            ("event", event_id, ".".join(parse_station_id(station))),
             lambda: service.analyze_event(runner, event_id, station),
         )
 
@@ -97,7 +100,7 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
         return [LiveStationOut(id=sid, label=label) for sid, label in LIVE_STATIONS]
 
     @app.get("/api/live", response_model=AnalysisResult)
-    def live(station: str):
+    def live(station: str = Query(max_length=STATION_MAX)):
         return service.analyze_live(runner, station, live_cache)
 
     @app.get("/api/models", response_model=ModelsOut)

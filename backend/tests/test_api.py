@@ -207,3 +207,21 @@ def test_unknown_api_path_is_json_404(client):
     r = client.get("/api/nope")
     assert r.status_code == 404
     assert r.json()["error"] == "not_found" and isinstance(r.json()["message"], str)
+
+
+def test_station_param_length_capped(client):
+    long_station = "IU.MAJO.00.BH" + "X" * 4  # 17 chars
+    assert len(long_station) == 17
+    for path, params in (("/api/analyze", {"event_id": "us1"}), ("/api/live", {})):
+        r = client.get(path, params={**params, "station": long_station})
+        assert r.status_code == 422 and r.json()["error"] == "invalid_request"
+
+
+def test_analyze_cache_shares_case_variants(client, waveform_calls):
+    for s in ("iu.majo.00.bh", STATION):
+        assert client.get("/api/analyze", params={"event_id": "us1", "station": s}).status_code == 200
+    assert len(waveform_calls) == 1
+
+
+def test_non_api_404_is_not_json_error(client):
+    assert client.get("/apix").status_code == 404

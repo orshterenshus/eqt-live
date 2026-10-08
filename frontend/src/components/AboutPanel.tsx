@@ -14,7 +14,7 @@ export function AboutPanel({ models }: { models?: ModelsInfo }) {
         learns to imitate the original "teacher" while also learning from the true labels.
       </p>
       <p>
-        The student has {sizes}, runs about 7x faster on a GPU in the thesis benchmarks (on this free CPU host the gap is smaller, roughly 1.5x), and keeps the teacher's detection
+        The student has {sizes}, runs about 7x faster on a GPU in the thesis benchmarks (on this free CPU host the gap is smaller than the GPU result; see the measured times in the comparison card), and keeps the teacher's detection
         performance. This site runs both models side by side on real seismic data from EarthScope
         (IRIS), using earthquake catalogs from USGS.
       </p>

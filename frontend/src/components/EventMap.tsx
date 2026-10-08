@@ -11,7 +11,7 @@ export function EventMap({ events, selectedId, onSelect }: Props) {
   return (
     <MapContainer center={[20, 0]} zoom={2} className="map" worldCopyJump>
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {events.map((e) => (
