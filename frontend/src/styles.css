@@ -203,5 +203,11 @@ select {
   background: var(--panel); color: var(--muted); font-family: var(--mono); font-size: 10px;
 }
 .leaflet-control-attribution a { color: var(--muted); }
-.leaflet-bar { border: 1.5px solid var(--line); border-radius: 0; box-shadow: none; }
-.leaflet-bar a { background: var(--panel); color: var(--ink); border-color: var(--line); border-radius: 0; }
+.leaflet-container .leaflet-bar, .leaflet-touch .leaflet-container .leaflet-bar, .leaflet-touch .leaflet-bar {
+  border: 1.5px solid var(--line); border-radius: 0; box-shadow: none;
+}
+.leaflet-container .leaflet-bar a, .leaflet-container .leaflet-bar a:first-child, .leaflet-container .leaflet-bar a:last-child {
+  background: var(--panel); color: var(--ink); border-color: var(--line); border-radius: 0;
+}
+.leaflet-container .leaflet-bar a:hover, .leaflet-container .leaflet-bar a:focus { background: var(--hair); color: var(--ink); }
+.leaflet-container .leaflet-bar a.leaflet-disabled { background: var(--panel); color: var(--muted); }

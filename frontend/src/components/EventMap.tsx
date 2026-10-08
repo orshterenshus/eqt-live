@@ -16,6 +16,7 @@ export function EventMap({ events, selectedId, onSelect }: Props) {
       />
       {events.map((e) => (
         <CircleMarker
+          // Leaflet applies className only when a path is created, so selection changes remount the marker.
           key={`${e.id}:${e.id === selectedId ? 1 : 0}`}
           center={[e.lat, e.lon]}
           radius={Math.max(3, e.magnitude * 2)}
