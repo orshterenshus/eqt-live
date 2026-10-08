@@ -1,6 +1,6 @@
 import type { AnalysisResult, ModelResult, ModelsInfo } from "../api/client";
 import { formatUtcTime, secondsBetween } from "../format";
-import { formatDelta, pickQuality, speedup } from "../verdict";
+import { effectivePick, FASTER_RATIO, formatDelta, pickQuality, speedup } from "../verdict";
 
 function header(label: string, params?: number): string {
   return params ? `${label} ${Math.round(params / 1000)}K` : label;
@@ -38,20 +38,20 @@ export function ComparisonCard({ result, models }: { result: AnalysisResult; mod
         </tr>
         <tr>
           <td>{event ? "P vs expected" : "P arrival (UTC)"}</td>
-          <PickCell pick={teacher.p_time} expected={theoretical.p_time} />
-          <PickCell pick={student.p_time} expected={theoretical.p_time} />
+          <PickCell pick={effectivePick(teacher, "p")} expected={theoretical.p_time} />
+          <PickCell pick={effectivePick(student, "p")} expected={theoretical.p_time} />
         </tr>
         <tr>
           <td>{event ? "S vs expected" : "S arrival (UTC)"}</td>
-          <PickCell pick={teacher.s_time} expected={theoretical.s_time} />
-          <PickCell pick={student.s_time} expected={theoretical.s_time} />
+          <PickCell pick={effectivePick(teacher, "s")} expected={theoretical.s_time} />
+          <PickCell pick={effectivePick(student, "s")} expected={theoretical.s_time} />
         </tr>
         <tr>
           <td>Inference / window</td>
           <td>{teacher.latency_ms.toFixed(1)} ms</td>
           <td>
             {student.latency_ms.toFixed(1)} ms
-            {ratio !== null && ratio >= 1.05 ? <span className="accent">{` · ${ratio.toFixed(1)}× faster`}</span> : null}
+            {ratio !== null && ratio >= FASTER_RATIO ? <span className="accent">{` · ${ratio.toFixed(1)}× faster`}</span> : null}
           </td>
         </tr>
         {models && (

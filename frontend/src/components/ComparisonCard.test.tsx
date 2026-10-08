@@ -47,10 +47,24 @@ describe("ComparisonCard", () => {
 
   it("shows absolute times in live mode (no expected arrival)", () => {
     const live = { ...base, theoretical: { p_time: null, s_time: null } };
-    render(<ComparisonCard result={live} />);
+    const { container } = render(<ComparisonCard result={live} />);
     expect(screen.getByText("P arrival (UTC)")).toBeInTheDocument();
     expect(screen.getByText("12:00:30.00")).toBeInTheDocument();
     expect(screen.getByText("Teacher")).toBeInTheDocument();
     expect(screen.queryByText("Model size")).not.toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/●/);
+  });
+
+  it("does not grade the pick of an undetected model", () => {
+    const r = { ...base, teacher: { ...teacher, detected: false } };
+    render(<ComparisonCard result={r} models={models} />);
+    expect(screen.queryByText("● +0.27 s close")).not.toBeInTheDocument();
+    expect(screen.getAllByText("— not picked").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("grades a distant pick as far", () => {
+    const r = { ...base, student: { ...student, p_time: "2026-10-07T12:00:34.73Z" } };
+    render(<ComparisonCard result={r} models={models} />);
+    expect(screen.getByText("● +5.00 s far")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,11 @@
-import type { AnalysisResult } from "./api/client";
+import type { AnalysisResult, ModelResult } from "./api/client";
 import { secondsBetween } from "./format";
+
+export const FASTER_RATIO = 1.05;
+
+export function effectivePick(m: ModelResult, phase: "p" | "s"): string | null {
+  return m.detected ? (phase === "p" ? m.p_time : m.s_time) : null;
+}
 
 export type PickQuality = "close" | "fair" | "far" | "none";
 
@@ -24,7 +30,7 @@ export function speedup(r: AnalysisResult): number | null {
 const usable = (q: PickQuality | null) => q === "close" || q === "fair";
 
 function speedClause(ratio: number | null): string {
-  if (ratio !== null && ratio >= 1.05) return ` and ran ${ratio.toFixed(1)}× faster`;
+  if (ratio !== null && ratio >= FASTER_RATIO) return ` and ran ${ratio.toFixed(1)}× faster`;
   if (ratio !== null && ratio >= 0.95) return " and ran at a similar speed";
   return "";
 }
@@ -47,8 +53,8 @@ export function verdictSentence(r: AnalysisResult): string {
   }
 
   // An undetected model's pick does not count.
-  const tp = t.detected ? t.p_time : null;
-  const sp = s.detected ? s.p_time : null;
+  const tp = effectivePick(t, "p");
+  const sp = effectivePick(s, "p");
 
   if (t.detected !== s.detected) {
     const who = t.detected ? "teacher" : "student";
