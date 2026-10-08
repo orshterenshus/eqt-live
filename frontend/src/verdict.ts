@@ -61,7 +61,8 @@ export function verdictSentence(r: AnalysisResult): string {
     const pick = t.detected ? tp : sp;
     const d = pick ? secondsBetween(expected, pick) : NaN;
     if (!Number.isNaN(d)) {
-      return `Only the ${who} detected the earthquake at this station; its P pick is ${formatDelta(d)} from the expected arrival.`;
+      const quality = pickQuality(pick, expected);
+      return `Only the ${who} detected the earthquake at this station; its P pick is ${formatDelta(d)} from the expected arrival (${quality}).`;
     }
     return `Only the ${who} detected the earthquake at this station, but it did not pick an exact P arrival.`;
   }

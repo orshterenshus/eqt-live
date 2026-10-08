@@ -43,6 +43,7 @@ export function useTheme(): [Theme, () => void] {
 export const ThemeContext = createContext<Theme>("light");
 
 export interface ThemeColors {
+  scope: string;
   trace: string;
   teacher: string;
   student: string;
@@ -55,7 +56,7 @@ export interface ThemeColors {
 }
 
 const FALLBACK: ThemeColors = {
-  trace: "#7ee0c3", teacher: "#f2f0ea", student: "#ff6b4a", expected: "#9b917f",
+  scope: "#11100e", trace: "#7ee0c3", teacher: "#f2f0ea", student: "#ff6b4a", expected: "#9b917f",
   muted: "#9b917f", hair: "#2a2622", good: "#2f6b3a", warn: "#9a5b00", bad: "#b42318",
 };
 
@@ -63,6 +64,7 @@ export function readThemeColors(): ThemeColors {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
+    scope: read("--scope", FALLBACK.scope),
     trace: read("--trace", FALLBACK.trace),
     teacher: read("--teacher", FALLBACK.teacher),
     student: read("--student", FALLBACK.student),

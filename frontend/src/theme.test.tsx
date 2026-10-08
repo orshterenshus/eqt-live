@@ -31,7 +31,8 @@ describe("theme", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked");
     });
-    expect(initialTheme()).toBe("light");
+    mockMatchMedia(true);
+    expect(initialTheme()).toBe("dark");
   });
 
   it("toggle applies data-theme and persists", () => {

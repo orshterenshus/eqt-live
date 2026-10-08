@@ -90,6 +90,7 @@ a { color: var(--accent); }
 }
 .nav button:hover { color: var(--ink); }
 .nav button[aria-current="page"] { color: var(--ink); border-color: var(--line); }
+.header-actions { display: flex; align-items: center; gap: 4px; }
 .theme-toggle { margin-left: 8px; color: var(--ink); border-color: var(--line); font-size: 14px; text-transform: none; }
 
 /* Intro */
@@ -137,6 +138,7 @@ select {
   text-align: left; padding: 8px 4px; border: none; border-bottom: 1px solid var(--hair);
   background: none; color: var(--ink); font: inherit; cursor: pointer;
 }
+.event-list button:focus-visible { outline-offset: -2px; }
 .event-list button:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .event-list .marker { color: var(--accent); }
 .event-list .mag { font-family: var(--mono); font-weight: 500; }
@@ -169,6 +171,7 @@ select {
 .scope-legend { display: flex; gap: 12px; }
 .scope-legend .teacher { color: var(--teacher); }
 .scope-legend .student { color: var(--student); }
+.scope-legend--neutral span { color: var(--scope-muted); }
 .scope-legend .expected { color: var(--expected); }
 .scope-body {
   background-image: linear-gradient(90deg, var(--scope-grid) 1px, transparent 1px);

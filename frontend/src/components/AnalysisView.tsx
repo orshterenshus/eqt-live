@@ -42,10 +42,10 @@ export function AnalysisView({ query, models }: Props) {
 
       <div className="scope">
         <div className="scope-head">
-          <span>Model output · probability</span>
-          <span className="scope-legend">
-            <span className="teacher">— teacher</span>
-            <span className="student">- - student</span>
+          <span>Model output · probability · seconds</span>
+          <span className="scope-legend scope-legend--neutral">
+            <span>— teacher</span>
+            <span>- - student</span>
           </span>
         </div>
         <div className="scope-body">

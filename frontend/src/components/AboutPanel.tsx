@@ -2,8 +2,8 @@ import type { ModelsInfo } from "../api/client";
 
 export function AboutPanel({ models }: { models?: ModelsInfo }) {
   const sizes = models
-    ? `${models.student.params.toLocaleString()} parameters, ${models.compression.toFixed(1)}x fewer than the teacher's ${models.teacher.params.toLocaleString()}`
-    : "about 6x fewer parameters than the teacher";
+    ? `${models.student.params.toLocaleString()} parameters, ${models.compression.toFixed(1)}× fewer than the teacher's ${models.teacher.params.toLocaleString()}`
+    : "about 6× fewer parameters than the teacher";
   return (
     <section className="panel method">
       <h2>Method</h2>
@@ -14,7 +14,7 @@ export function AboutPanel({ models }: { models?: ModelsInfo }) {
         learns to imitate the original "teacher" while also learning from the true labels.
       </p>
       <p>
-        The student has {sizes}, runs about 7x faster on a GPU in the thesis benchmarks (on this free CPU host the gap is smaller than the GPU result; see the measured times in the comparison card), and keeps the teacher's detection
+        The student has {sizes}, runs about 7× faster on a GPU in the thesis benchmarks (on this free CPU host the gap is smaller than the GPU result; see the measured times in the comparison table), and keeps the teacher's detection
         performance. This site runs both models side by side on real seismic data from EarthScope
         (IRIS), using earthquake catalogs from USGS.
       </p>

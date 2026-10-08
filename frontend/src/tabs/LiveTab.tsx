@@ -27,8 +27,8 @@ export function LiveTab({ models }: { models?: ModelsInfo }) {
       <p className="note">
         This view analyzes the latest ~2 minutes from a live station and refreshes every minute.
         Most of the time there is no earthquake, so "no" is the normal result. To see detections,
-        use the Recent Earthquakes tab. In testing on live data, the original teacher model often flags
-        quiet stations, while the distilled student is more conservative — compare the two below.
+        use the Recent tab. In testing on live data, the original teacher model often flags
+        quiet stations, while the distilled student is more conservative. Compare the two below.
       </p>
       {stationsQ.isPending ? (
         <Spinner text="loading stations" />

@@ -27,7 +27,7 @@ export function ProbabilityChart({ result }: { result: AnalysisResult }) {
       layout={{
         height: HEIGHT, margin: { l: 44, r: 12, t: 10, b: 50 },
         paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { ...FONT, color: c.muted },
-        hoverlabel: { bgcolor: "#11100e", bordercolor: c.hair, font: { ...FONT, color: c.trace } },
+        hoverlabel: { bgcolor: c.scope, bordercolor: c.hair, font: { ...FONT, color: c.trace } },
         modebar: { bgcolor: "rgba(0,0,0,0)", color: c.muted, activecolor: c.trace },
         yaxis: { ...axis, range: [0, 1.05], title: { text: "probability", font: FONT } },
         xaxis: { ...axis },

@@ -125,7 +125,7 @@ describe("verdictSentence: event mode", () => {
   });
   it("teacher detected and picked close, student undetected", () => {
     expect(verdictSentence(result(model(true, 30.27, 10), model(false, null, 5), 30))).toBe(
-      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival.",
+      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival (close).",
     );
   });
   it("teacher detected without a pick, student undetected", () => {
@@ -137,12 +137,12 @@ describe("verdictSentence: event mode", () => {
     const text = verdictSentence(result(model(true, 30.27, 10), model(false, 30.34, 2), 30));
     expect(text).not.toContain("Both models found");
     expect(text).toBe(
-      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival.",
+      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival (close).",
     );
   });
   it("student detected alone with a pick", () => {
     expect(verdictSentence(result(model(false, null, 10), model(true, 29.5, 5), 30))).toBe(
-      "Only the student detected the earthquake at this station; its P pick is -0.50 s from the expected arrival.",
+      "Only the student detected the earthquake at this station; its P pick is -0.50 s from the expected arrival (close).",
     );
   });
 });

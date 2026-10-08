@@ -24,6 +24,7 @@ export default function App() {
       <div className="app">
         <header className="topbar">
           <span className="wordmark">EQT·LIVE</span>
+          <div className="header-actions">
           <nav className="nav" aria-label="Sections">
             {TABS.map(([id, label]) => (
               <button
@@ -35,8 +36,9 @@ export default function App() {
                 {label}
               </button>
             ))}
-            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </nav>
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          </div>
         </header>
         <main>
           {tab === "recent" && <RecentTab models={modelsQ.data} />}
