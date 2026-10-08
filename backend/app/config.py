@@ -11,7 +11,7 @@ STATIC_DIR = Path(os.environ.get("EQT_STATIC_DIR", BASE_DIR.parent / "frontend" 
 # Model I/O
 SAMPLING_RATE = 100.0
 WINDOW = 6000
-STRIDE = 3000
+STRIDE = 500  # 5 s: the student picks P reliably only early in a window (STEAD P at 4-9 s)
 DETECTION_THRESHOLD = 0.5
 PICK_THRESHOLD = 0.3
 DISPLAY_POINTS = 3000

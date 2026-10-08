@@ -33,8 +33,17 @@ def test_resample_noop_at_100hz():
 
 def test_window_starts_cover_end_of_trace():
     assert window_starts(6000) == [0]
-    assert window_starts(12000) == [0, 3000, 6000]
-    assert window_starts(13000) == [0, 3000, 6000, 7000]
+    assert window_starts(7000) == [0, 500, 1000]
+    assert window_starts(7200) == [0, 500, 1000, 1200]
+
+
+def test_every_onset_lands_early_in_some_window():
+    # The distilled student only picks P reliably in the first ~5 s of a window
+    # (STEAD places P at 4-9 s), so any onset must sit <= 5 s after some window start.
+    n = 12000
+    starts = window_starts(n)
+    for onset in range(0, n - 6000 + 1, 37):
+        assert any(0 <= onset - s <= 500 for s in starts), onset
 
 
 def test_window_starts_rejects_short_trace():
@@ -47,8 +56,8 @@ def test_make_windows_shape_and_channels_last():
     data[0] = 1.0
     data[0, ::2] = -1.0  # Z alternates -1/+1 -> stays +-1 after z-score
     windows, starts = make_windows(data, 100.0)
-    assert windows.shape == (3, 6000, 3)
-    assert starts == [0, 3000, 6000]
+    assert windows.shape == (13, 6000, 3)
+    assert starts == list(range(0, 6001, 500))
     assert np.allclose(np.abs(windows[0, :, 0]), 1.0)  # Z is channel 0
     assert np.all(windows[0, :, 1] == 0)
 
