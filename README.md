@@ -4,7 +4,13 @@
 
 **Live demo:** https://eqt-live-6nkkumst7q-uc.a.run.app
 
-![EQT-Live analyzing a M4.4 earthquake in Chile](docs/screenshot.jpg)
+![EQT-Live in light mode, analyzing a M5.1 earthquake near Fiji](docs/screenshot.jpg)
+
+<details><summary>Dark mode</summary>
+
+![EQT-Live in dark mode](docs/screenshot-dark.jpg)
+
+</details>
 
 EQT-Live runs two deep-learning models side by side on **real seismic recordings**:
 
