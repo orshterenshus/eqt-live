@@ -64,25 +64,43 @@ jobs:
 
   deploy:
     concurrency:
-      group: hf-deploy
+      group: cloud-run-deploy
       cancel-in-progress: true
     needs: [backend, frontend, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HF_SPACE != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # keyless auth to Google Cloud (Workload Identity Federation)
+    env:
+      PROJECT_ID: gen-lang-client-0309165003
+      REGION: us-central1
+      SERVICE: eqt-live
+      IMAGE: us-central1-docker.pkg.dev/gen-lang-client-0309165003/eqt-live/eqt-live:${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
-      - name: Push to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ vars.HF_SPACE }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/313854684807/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deployer@gen-lang-client-0309165003.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build and push image
         run: |
-          if [ -z "${HF_TOKEN}" ] || [ -z "${HF_SPACE}" ]; then
-            echo "::error::HF_TOKEN secret and HF_SPACE variable must both be set"
-            exit 1
-          fi
-          git lfs install
-          git lfs fetch --all origin
-          git push --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" HEAD:main
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${SERVICE}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --image "${IMAGE}" \
+            --service-account "eqt-live-runtime@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --port 7860 --cpu 1 --memory 2Gi --concurrency 10 --timeout 120 \
+            --min-instances 0 --max-instances 2 \
+            --allow-unauthenticated --quiet
+      - name: Smoke test the live service
+        run: |
+          url=$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')
+          echo "Live at ${url}"
+          curl -fs --retry 5 --retry-delay 10 "${url}/health" | grep -q '"models_loaded":true'
