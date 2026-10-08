@@ -31,6 +31,14 @@ describe("pickQuality", () => {
     expect(pickQuality(null, at(30))).toBe("none");
     expect(pickQuality(at(31), null)).toBeNull();
   });
+  it("treats exact boundaries as inclusive", () => {
+    expect(pickQuality(at(31), at(30))).toBe("close");
+    expect(pickQuality(at(33), at(30))).toBe("fair");
+  });
+  it("treats an unparseable pick as none", () => {
+    expect(pickQuality(at(31), "not-a-date")).toBe("none");
+    expect(pickQuality("not-a-date", at(30))).toBe("none");
+  });
 });
 
 describe("formatDelta and speedup", () => {
@@ -55,6 +63,16 @@ describe("verdictSentence: event mode", () => {
       "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran 5.0× faster.",
     );
   });
+  it("both close, similar speed when ratio is below 1.05", () => {
+    expect(verdictSentence(result(model(true, 30.27, 8), model(true, 30.34, 10), 30))).toBe(
+      "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran at a similar speed.",
+    );
+  });
+  it("both close, similar speed when ratio is 1.02", () => {
+    expect(verdictSentence(result(model(true, 30.27, 102), model(true, 30.34, 100), 30))).toBe(
+      "Both models found the P wave within 0.34 s of the expected arrival. The student matched the teacher and ran at a similar speed.",
+    );
+  });
   it("both fair, student clearly worse", () => {
     expect(verdictSentence(result(model(true, 30.2, 10), model(true, 32.5, 5), 30))).toBe(
       "Both models found the P wave within 2.50 s of the expected arrival. The student came close to the teacher and ran 2.0× faster.",
@@ -67,7 +85,7 @@ describe("verdictSentence: event mode", () => {
   });
   it("only the student, teacher picked something else", () => {
     expect(verdictSentence(result(model(true, 42, 10), model(true, 29.5, 5), 30))).toBe(
-      "Only the student found the P wave near the expected arrival (-0.50 s). The other picked a different arrival, probably another event.",
+      "Only the student found the P wave near the expected arrival (-0.50 s). The other picked a different arrival (another event or a mis-pick).",
     );
   });
   it("both detected but neither picked", () => {
@@ -77,7 +95,34 @@ describe("verdictSentence: event mode", () => {
   });
   it("both far", () => {
     expect(verdictSentence(result(model(true, 40, 10), model(true, 45, 5), 30))).toBe(
-      "The models detected seismic activity but picked arrivals far from the expected time, likely a different event in the window.",
+      "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.",
+    );
+  });
+  it("one far, one with no pick (fallback)", () => {
+    expect(verdictSentence(result(model(true, 40, 10), model(true, null, 5), 30))).toBe(
+      "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.",
+    );
+  });
+  it("teacher detected and picked close, student undetected", () => {
+    expect(verdictSentence(result(model(true, 30.27, 10), model(false, null, 5), 30))).toBe(
+      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival.",
+    );
+  });
+  it("teacher detected without a pick, student undetected", () => {
+    expect(verdictSentence(result(model(true, null, 10), model(false, null, 5), 30))).toBe(
+      "Only the teacher detected the earthquake at this station, but it did not pick an exact P arrival.",
+    );
+  });
+  it("student undetected but carrying a close p_time does not count as a pick", () => {
+    const text = verdictSentence(result(model(true, 30.27, 10), model(false, 30.34, 2), 30));
+    expect(text).not.toContain("Both models found");
+    expect(text).toBe(
+      "Only the teacher detected the earthquake at this station; its P pick is +0.27 s from the expected arrival.",
+    );
+  });
+  it("student detected alone with a pick", () => {
+    expect(verdictSentence(result(model(false, null, 10), model(true, 29.5, 5), 30))).toBe(
+      "Only the student detected the earthquake at this station; its P pick is -0.50 s from the expected arrival.",
     );
   });
 });
@@ -95,7 +140,7 @@ describe("verdictSentence: live mode", () => {
   });
   it("teacher only", () => {
     expect(verdictSentence(result(model(true, 30, 10), model(false, null, 5), null))).toBe(
-      "The teacher flags activity but the student does not. The original model often over-triggers on quiet live noise.",
+      "The teacher flags activity but the student does not. In our tests on live data, the original model often over-triggers on quiet noise.",
     );
   });
   it("student only", () => {

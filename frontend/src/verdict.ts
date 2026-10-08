@@ -7,6 +7,7 @@ export function pickQuality(pick: string | null, expected: string | null): PickQ
   if (!expected) return null;
   if (!pick) return "none";
   const d = Math.abs(secondsBetween(expected, pick));
+  if (Number.isNaN(d)) return "none";
   if (d <= 1) return "close";
   if (d <= 3) return "fair";
   return "far";
@@ -30,7 +31,7 @@ export function verdictSentence(r: AnalysisResult): string {
     if (!t.detected && !s.detected) return "Quiet: neither model detected an earthquake in the last two minutes.";
     if (t.detected && s.detected) return "Both models detected seismic activity.";
     if (t.detected) {
-      return "The teacher flags activity but the student does not. The original model often over-triggers on quiet live noise.";
+      return "The teacher flags activity but the student does not. In our tests on live data, the original model often over-triggers on quiet noise.";
     }
     return "The student flags activity but the teacher does not.";
   }
@@ -38,25 +39,43 @@ export function verdictSentence(r: AnalysisResult): string {
   if (!t.detected && !s.detected) {
     return "Neither model detected the earthquake at this station. It may be too weak or too far away. Try a closer station.";
   }
-  const tq = pickQuality(t.p_time, expected);
-  const sq = pickQuality(s.p_time, expected);
+
+  // An undetected model's pick does not count.
+  const tp = t.detected ? t.p_time : null;
+  const sp = s.detected ? s.p_time : null;
+
+  if (t.detected !== s.detected) {
+    const who = t.detected ? "teacher" : "student";
+    const pick = t.detected ? tp : sp;
+    const d = pick ? secondsBetween(expected, pick) : NaN;
+    if (!Number.isNaN(d)) {
+      return `Only the ${who} detected the earthquake at this station; its P pick is ${formatDelta(d)} from the expected arrival.`;
+    }
+    return `Only the ${who} detected the earthquake at this station, but it did not pick an exact P arrival.`;
+  }
+
+  const tq = pickQuality(tp, expected);
+  const sq = pickQuality(sp, expected);
   if (usable(tq) && usable(sq)) {
-    const td = Math.abs(secondsBetween(expected, t.p_time!));
-    const sd = Math.abs(secondsBetween(expected, s.p_time!));
+    const td = Math.abs(secondsBetween(expected, tp!));
+    const sd = Math.abs(secondsBetween(expected, sp!));
     const verb = sd <= td + 0.5 ? "matched" : "came close to";
     const ratio = speedup(r);
-    const speed = ratio ? ` and ran ${ratio.toFixed(1)}× faster` : "";
+    const speed = ratio !== null && ratio >= 1.05 ? ` and ran ${ratio.toFixed(1)}× faster` : " and ran at a similar speed";
     return `Both models found the P wave within ${Math.max(td, sd).toFixed(2)} s of the expected arrival. The student ${verb} the teacher${speed}.`;
   }
   if (usable(tq) || usable(sq)) {
-    const winner = usable(tq) ? t : s;
-    const other = usable(tq) ? s : t;
-    const who = usable(tq) ? "teacher" : "student";
-    const otherText = other.p_time ? "picked a different arrival, probably another event" : "did not pick it";
-    return `Only the ${who} found the P wave near the expected arrival (${formatDelta(secondsBetween(expected, winner.p_time!))}). The other ${otherText}.`;
+    const useTeacher = usable(tq);
+    const winnerPick = useTeacher ? tp! : sp!;
+    const otherPick = useTeacher ? sp : tp;
+    const who = useTeacher ? "teacher" : "student";
+    const otherText = otherPick
+      ? "picked a different arrival (another event or a mis-pick)"
+      : "did not pick it";
+    return `Only the ${who} found the P wave near the expected arrival (${formatDelta(secondsBetween(expected, winnerPick))}). The other ${otherText}.`;
   }
   if (tq === "none" && sq === "none") {
     return "Both models detected the earthquake, but neither was confident about the exact P arrival.";
   }
-  return "The models detected seismic activity but picked arrivals far from the expected time, likely a different event in the window.";
+  return "Both models detected seismic activity but picked arrivals far from the expected time, possibly a different event in the window.";
 }
