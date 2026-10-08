@@ -16,7 +16,7 @@ export function EventMap({ events, selectedId, onSelect }: Props) {
       />
       {events.map((e) => (
         <CircleMarker
-          key={e.id}
+          key={`${e.id}:${e.id === selectedId ? 1 : 0}`}
           center={[e.lat, e.lon]}
           radius={Math.max(3, e.magnitude * 2)}
           pathOptions={{ className: e.id === selectedId ? "quake quake-selected" : "quake" }}
