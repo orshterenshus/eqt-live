@@ -105,6 +105,10 @@ function verdictSentence(r: AnalysisResult): string;
 Sentence rules, first match wins:
 
 Event mode (theoretical P available):
+(An undetected model's pick counts as absent. A speed-up is claimed only when the ratio is ≥ 1.05;
+otherwise the text says "ran at a similar speed". If exactly one model detected, the verdict says
+"Only the {model} detected the earthquake at this station…" with its pick offset, or notes that it
+did not pick P. Misses are attributed to "another event or a mis-pick", never stated as certain.)
 1. Neither model detected → "Neither model detected the earthquake at this station. It may be
    too weak or too far away. Try a closer station."
 2. Both P picks close or fair → "Both models found the P wave within {max|Δ|} s of the expected
