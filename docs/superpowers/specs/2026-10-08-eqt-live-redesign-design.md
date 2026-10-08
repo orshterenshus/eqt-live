@@ -113,7 +113,9 @@ Event mode (theoretical P available):
 3. Only one model's P is close/fair → "Only the {teacher|student} found the P wave near the
    expected arrival ({Δ} s). The other {did not pick it|picked a different arrival, probably
    another event}."
-4. Otherwise → "The models detected seismic activity but picked arrivals far from the expected
+4. At least one detected but neither model picked P → "Both models detected the earthquake, but
+   neither was confident about the exact P arrival."
+5. Otherwise → "The models detected seismic activity but picked arrivals far from the expected
    time, likely a different event in the window."
 
 Live mode (no theoretical):
