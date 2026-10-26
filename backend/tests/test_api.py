@@ -79,7 +79,8 @@ def client(waveform_calls):
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok", "models_loaded": True}
+    assert client.get("/health").json() == {"status": "ok", "models_loaded": True,
+                                            "models_loading": False}
 
 
 def test_events(client):

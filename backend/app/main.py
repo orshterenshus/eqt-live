@@ -34,11 +34,9 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if load_models and not runner.loaded:
-            try:
-                runner.load()
-                log.info("Models loaded")
-            except Exception:
-                log.exception("Model loading failed")
+            # Don't block startup: the page and the catalog endpoints are served right away,
+            # and model endpoints wait for the load (see ModelRunner._wait_for_load).
+            runner.start_background_load()
         yield
 
     app = FastAPI(title="EQT-Live", version="1.0.0", lifespan=lifespan)
@@ -75,7 +73,8 @@ def create_app(runner=None, load_models: bool = True) -> FastAPI:
 
     @app.get("/health", response_model=HealthOut)
     def health():
-        return HealthOut(status="ok", models_loaded=runner.loaded)
+        return HealthOut(status="ok", models_loaded=runner.loaded,
+                         models_loading=getattr(runner, "loading", False))
 
     @app.get("/api/events", response_model=list[EventOut])
     def get_events(days: int = Query(3, ge=1, le=7), min_mag: float = Query(4.0, ge=0, le=10)):

@@ -101,4 +101,11 @@ export const api = {
   live: (station: string) => get<AnalysisResult>(`/api/live?station=${q(station)}`),
   liveStations: () => get<LiveStation[]>("/api/live/stations"),
   models: () => get<ModelsInfo>("/api/models"),
+  health: () => get<Health>("/health"),
 };
+
+export interface Health {
+  status: string;
+  models_loaded: boolean;
+  models_loading: boolean;
+}

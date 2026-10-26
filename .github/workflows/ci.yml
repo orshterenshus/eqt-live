@@ -103,4 +103,7 @@ jobs:
         run: |
           url=$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')
           echo "Live at ${url}"
-          curl -fs --retry 5 --retry-delay 10 "${url}/health" | grep -q '"models_loaded":true'
+          # Models load in the background after a cold start. /api/models waits for them, and the
+          # open request also keeps Cloud Run from throttling the instance's CPU meanwhile.
+          curl -fs --retry 3 --retry-delay 10 --max-time 115 "${url}/api/models" > /dev/null
+          curl -fs "${url}/health" | grep -q '"models_loaded":true'

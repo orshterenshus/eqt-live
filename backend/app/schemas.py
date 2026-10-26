@@ -84,3 +84,4 @@ class ModelsOut(BaseModel):
 class HealthOut(BaseModel):
     status: str
     models_loaded: bool
+    models_loading: bool = False
